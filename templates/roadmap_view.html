@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-4xl mx-auto py-8">
+    <div class="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6">
+        <div>
+            <h1 class="text-4xl font-extrabold text-gray-900 dark:text-white mb-2">{{ roadmap.tech_name }} Learning Path</h1>
+            <p class="text-xl text-gray-500 dark:text-gray-400">Progress: Level {{ progress.current_section if not progress.is_completed else roadmap.sections|length }} of {{ roadmap.sections|length }}</p>
+        </div>
+        <div class="text-center md:text-right">
+            {% if progress.is_completed %}
+                <span class="inline-flex items-center px-4 py-2 text-lg font-bold rounded-lg bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                    🎉 Path Completed
+                </span>
+            {% else %}
+                <a href="{{ url_for('student.take_roadmap_test', roadmap_id=roadmap.id) }}" class="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-bold rounded-xl text-white bg-yellow-500 hover:bg-yellow-600 shadow-md transition-all hover:scale-105">
+                    <i class="fas fa-play mr-2"></i> Take Active Level Quiz
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="relative pl-4 md:pl-0">
+        <!-- Connecting Line -->
+        <div class="absolute h-full w-1 bg-gray-200 dark:bg-gray-700 left-8 md:left-12 top-0" style="transform: translateX(-50%); z-index: 1;"></div>
+
+        <div class="space-y-12">
+            {% for sec in roadmap.sections %}
+                {% set is_unlocked = sec.level <= progress.current_section or progress.is_completed %}
+                {% set is_active = sec.level == progress.current_section and not progress.is_completed %}
+                {% set is_passed = sec.level < progress.current_section or progress.is_completed %}
+                
+                <div class="relative z-10 flex items-start gap-6 md:gap-8 group">
+                    <!-- Step Indicator -->
+                    <div class="flex-shrink-0 w-16 h-16 md:w-24 md:h-24 rounded-full flex items-center justify-center border-4 border-white dark:border-darkbase shadow-md transition-transform duration-300 {% if is_passed %}bg-green-500 text-white group-hover:scale-110{% elif is_active %}bg-yellow-400 text-gray-900 group-hover:scale-110 border-yellow-200 dark:border-yellow-900{% else %}bg-gray-300 dark:bg-gray-600 text-white opacity-60{% endif %}">
+                        {% if is_passed %}
+                            <span class="text-2xl md:text-4xl font-bold">✓</span>
+                        {% elif is_active %}
+                            <span class="text-2xl md:text-4xl font-black">{{ sec.level }}</span>
+                        {% else %}
+                            <span class="text-xl md:text-3xl"><i class="fas fa-lock"></i></span>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Content Card -->
+                    <div class="flex-1 bg-white dark:bg-darkcard rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-6 md:p-8 transition-all duration-300 {% if not is_unlocked %}opacity-60 grayscale-[50%]{% else %}hover:shadow-lg hover:-translate-y-1{% endif %}">
+                        <div class="flex flex-col md:flex-row justify-between md:items-center mb-4 gap-3">
+                            <h3 class="text-2xl font-bold text-gray-900 dark:text-white">Level {{ sec.level }}: {{ sec.title }}</h3>
+                            <div>
+                                {% if is_active %}
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300">Current Active</span>
+                                {% elif is_passed %}
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300">Unlocked & Passed</span>
+                                {% else %}
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">Locked</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <p class="text-lg text-gray-600 dark:text-gray-300 mb-6">{{ sec.description }}</p>
+                        
+                        {% if is_unlocked %}
+                            {% if sec.topics %}
+                            <div class="mb-6">
+                                <h5 class="font-bold text-gray-900 dark:text-white mb-3">Key Topics to Cover:</h5>
+                                <ul class="list-disc list-inside text-gray-700 dark:text-gray-300 space-y-1">
+                                    {% for topic in sec.topics %}
+                                        <li>{{ topic }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="pt-6 border-t border-gray-100 dark:border-gray-800">
+                                <h5 class="font-bold text-gray-900 dark:text-white mb-4">Curated Learning Materials:</h5>
+                                <div class="space-y-4">
+                                    <!-- GeeksforGeeks Dropdown -->
+                                    <details class="bg-white dark:bg-darkcard rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden group">
+                                        <summary class="flex items-center justify-between p-3 sm:p-4 cursor-pointer hover:bg-brand-50 dark:hover:bg-brand-900/20 transition-colors">
+                                            <div class="flex items-center">
+                                                <span class="flex-shrink-0 inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold bg-brand-100 text-brand-800 dark:bg-brand-900 dark:text-brand-200 uppercase tracking-wide mr-4">Articles</span>
+                                                <span class="font-semibold text-gray-800 dark:text-gray-200 group-hover:text-brand-600 dark:group-hover:text-brand-400">Learn Topics on GeeksforGeeks</span>
+                                            </div>
+                                            <i class="fas fa-chevron-down text-gray-400 group-open:rotate-180 transition-transform"></i>
+                                        </summary>
+                                        <div class="p-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 space-y-2">
+                                            {% if sec.topics %}
+                                                {% for topic in sec.topics %}
+                                                <a href="https://www.google.com/search?q={{ topic|urlencode }}+geeks+for+geeks" target="_blank" class="flex items-center p-2 rounded-lg hover:bg-white dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 hover:text-brand-600 dark:hover:text-brand-400 transition-colors text-sm hover:translate-x-1 duration-200">
+                                                    <i class="fas fa-search mr-3 text-gray-400"></i> {{ topic }}
+                                                </a>
+                                                {% endfor %}
+                                            {% else %}
+                                                <a href="https://www.google.com/search?q={{ sec.title|urlencode }}+geeks+for+geeks" target="_blank" class="flex items-center p-2 rounded-lg hover:bg-white dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 hover:text-brand-600 dark:hover:text-brand-400 transition-colors text-sm hover:translate-x-1 duration-200">
+                                                    <i class="fas fa-search mr-3 text-gray-400"></i> Search GeeksforGeeks Articles
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </details>
+
+                                    <!-- YouTube Dropdown -->
+                                    <details class="bg-white dark:bg-darkcard rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden group">
+                                        <summary class="flex items-center justify-between p-3 sm:p-4 cursor-pointer hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                                            <div class="flex items-center">
+                                                <span class="flex-shrink-0 inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 uppercase tracking-wide mr-4">Videos</span>
+                                                <span class="font-semibold text-gray-800 dark:text-gray-200 group-hover:text-red-600 dark:group-hover:text-red-400">Watch Topics on YouTube</span>
+                                            </div>
+                                            <i class="fas fa-chevron-down text-gray-400 group-open:rotate-180 transition-transform"></i>
+                                        </summary>
+                                        <div class="p-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 space-y-2">
+                                            {% if sec.topics %}
+                                                {% for topic in sec.topics %}
+                                                <a href="https://www.youtube.com/results?search_query={{ topic|urlencode }}+tutorial" target="_blank" class="flex items-center p-2 rounded-lg hover:bg-white dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 transition-colors text-sm hover:translate-x-1 duration-200">
+                                                    <i class="fas fa-play-circle mr-3 text-red-400"></i> {{ topic }}
+                                                </a>
+                                                {% endfor %}
+                                            {% else %}
+                                                <a href="https://www.youtube.com/results?search_query={{ sec.title|urlencode }}+tutorial" target="_blank" class="flex items-center p-2 rounded-lg hover:bg-white dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 transition-colors text-sm hover:translate-x-1 duration-200">
+                                                    <i class="fas fa-play-circle mr-3 text-red-400"></i> Watch Explainer on YouTube
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </details>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="mt-4 inline-flex items-center px-4 py-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 text-gray-600 dark:text-gray-400 text-sm border border-gray-200 dark:border-gray-700 w-full">
+                                <i class="fas fa-lock mr-3"></i> Pass Level {{ sec.level - 1 }} quiz to unlock these resources.
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+{% endblock %}

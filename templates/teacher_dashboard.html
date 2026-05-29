@@ -1,0 +1,913 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-5 pb-12">
+    <!-- Header -->
+    <div class="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 pb-4">
+        <div>
+            <h2 class="text-2xl font-extrabold text-gray-900 dark:text-white">Teacher Command Center</h2>
+            <p class="text-sm mt-0.5 text-gray-500 dark:text-gray-400">Manage your assigned subjects, students, and specialized quizzes.</p>
+        </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="tab-bar">
+        <button onclick="switchTab('overview')" id="tab-btn-overview" class="tab-btn active">Overview</button>
+        <button onclick="switchTab('attendance')" id="tab-btn-attendance" class="tab-btn">Attendance</button>
+        <button onclick="switchTab('exams')" id="tab-btn-exams" class="tab-btn">Exam Marks</button>
+    </div>
+
+    <!-- OVERVIEW TAB -->
+    <div id="tab-overview" class="space-y-6">
+
+        <!-- Key Metrics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="stat-card">
+                <div class="stat-icon bg-brand-100 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400"><i class="fa-solid fa-chart-line"></i></div>
+                <div>
+                    <p class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Teacher KPI</p>
+                    <p class="text-2xl font-extrabold text-gray-900 dark:text-white">{{ teacher_kpi }} / 100</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400"><i class="fa-solid fa-users"></i></div>
+                <div>
+                    <p class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total Students</p>
+                    <p class="text-2xl font-extrabold text-gray-900 dark:text-white">{{ total_students }}</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400"><i class="fa-solid fa-calendar-check"></i></div>
+                <div>
+                    <p class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Avg. Attendance</p>
+                    <p class="text-2xl font-extrabold text-gray-900 dark:text-white">{{ avg_attendance }}%</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Global Dashboard Filters -->
+        <div class="card rounded-2xl p-5 bg-white dark:bg-darkcard border border-gray-200 dark:border-gray-700 shadow-sm">
+            <form action="{{ url_for('teacher.dashboard') }}" method="GET" class="flex flex-col md:flex-row gap-4 items-end">
+                <div class="flex-1 w-full">
+                    <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1 uppercase tracking-wider">Filter by Class</label>
+                    <select name="class_id" class="w-full px-4 py-2.5 text-sm border rounded-xl focus:ring-brand-500 dark:bg-darkbase dark:border-gray-600 dark:text-white outline-none shadow-sm transition">
+                        <option value="">All Classes</option>
+                        {% for c in classes %}
+                            <option value="{{ c.id }}" {% if request.args.get('class_id') == c.id|string %}selected{% endif %}>{{ c.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="flex-1 w-full">
+                    <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1 uppercase tracking-wider">Filter by Subject</label>
+                    <select name="subject_id" class="w-full px-4 py-2.5 text-sm border rounded-xl focus:ring-brand-500 dark:bg-darkbase dark:border-gray-600 dark:text-white outline-none shadow-sm transition">
+                        <option value="">All Subjects</option>
+                        {% for s in subjects %}
+                            <option value="{{ s.id }}" {% if request.args.get('subject_id') == s.id|string %}selected{% endif %}>{{ s.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="flex-1 w-full">
+                    <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1 uppercase tracking-wider">Filter by Student</label>
+                    <select name="student_id" class="w-full px-4 py-2.5 text-sm border rounded-xl focus:ring-brand-500 dark:bg-darkbase dark:border-gray-600 dark:text-white outline-none shadow-sm transition">
+                        <option value="">All Students</option>
+                        {% for student in my_students %}
+                            <option value="{{ student.id }}" {% if request.args.get('student_id') == student.id|string %}selected{% endif %}>{{ student.username }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="flex-shrink-0 w-full md:w-auto flex gap-3">
+                    <button type="submit" class="px-6 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl text-sm transition shadow-md">Apply Filters</button>
+                    {% if request.args %}
+                    <a href="{{ url_for('teacher.dashboard') }}" class="px-6 py-2.5 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white font-bold rounded-xl text-sm transition text-center shadow-sm">Clear</a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+
+        <!-- Row 1: Action Forms — equal height side-by-side -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+
+            <!-- Upload Material -->
+            <div class="card rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition duration-300 border border-brand-200 dark:border-brand-900/50 flex flex-col">
+                <div class="bg-gradient-to-r from-brand-500 to-indigo-600 px-6 py-4 flex items-center">
+                    <i class="fas fa-file-upload text-white mr-3 text-xl"></i>
+                    <h3 class="text-lg font-bold text-white">Upload Material</h3>
+                </div>
+                <div class="p-6 flex-1 flex flex-col">
+                    <form action="{{ url_for('teacher.upload_material') }}" method="POST" enctype="multipart/form-data" class="space-y-4 flex-1 flex flex-col">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Material Title</label>
+                            <input type="text" name="title" class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-brand-500 dark:bg-darkbase dark:border-gray-600 dark:text-white outline-none" placeholder="e.g., Intro to Neural Networks" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Target Subject</label>
+                            <select name="subject_id" class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-brand-500 dark:bg-darkbase dark:border-gray-600 dark:text-white outline-none" required>
+                                {% for s in subjects %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">File (PDF only)</label>
+                            <input type="file" name="file" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 dark:text-gray-400 focus:outline-none" accept=".pdf" required>
+                        </div>
+                        <button type="submit" class="mt-auto w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl transition shadow">Upload &amp; Index</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Assign Remedial Roadmap -->
+            <div class="card rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition duration-300 border border-green-200 dark:border-green-900/50 flex flex-col">
+                <div class="bg-gradient-to-r from-green-500 to-emerald-600 px-6 py-4 flex items-center">
+                    <i class="fas fa-magic text-white mr-3 text-xl"></i>
+                    <h3 class="text-lg font-bold text-white">Assign Remedial Roadmap</h3>
+                </div>
+                <div class="p-6 flex-1 flex flex-col">
+                    <form action="{{ url_for('teacher.start_test') }}" method="POST" class="space-y-4 flex-1 flex flex-col">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Target Subject</label>
+                            <select name="subject_id" class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-green-500 dark:bg-darkbase dark:border-gray-600 dark:text-white outline-none" required>
+                                {% for s in subjects %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Target Student</label>
+                            <select name="student_id" class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-green-500 dark:bg-darkbase dark:border-gray-600 dark:text-white outline-none" required>
+                                {% for student in my_students %}<option value="{{ student.id }}">{{ student.username }}</option>{% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Teacher Remarks</label>
+                            <textarea name="remarks" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-green-500 dark:bg-darkbase dark:border-gray-600 dark:text-white outline-none resize-none" placeholder="e.g., Struggling with database joins" required></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Number of Questions</label>
+                            <input type="number" name="num_questions" class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-green-500 dark:bg-darkbase dark:border-gray-600 dark:text-white outline-none" value="5" min="1" max="20" required>
+                        </div>
+                        <button type="submit" class="mt-auto w-full py-3 bg-green-500 hover:bg-green-600 text-white font-bold rounded-xl transition shadow">Generate &amp; Assign</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Row 2: Performance Alerts + Class Analytics — equal height -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+
+            <!-- Performance Alerts -->
+            <div class="card rounded-2xl overflow-hidden border border-yellow-200 dark:border-yellow-900/50 shadow-md flex flex-col">
+                <div class="bg-gradient-to-r from-yellow-500 to-amber-600 px-6 py-4 flex items-center justify-between">
+                    <h3 class="text-lg font-bold text-white flex items-center"><i class="fas fa-bell mr-2"></i> Performance Alerts</h3>
+                    {% if notifications %}<span class="bg-white text-yellow-600 font-bold px-2 py-0.5 rounded-full text-xs shadow-sm">{{ notifications|length }} New</span>{% endif %}
+                </div>
+                <div class="flex-1 overflow-y-auto bg-white dark:bg-darkcard" style="max-height:320px;">
+                    {% if notifications %}
+                    <ul class="divide-y divide-gray-100 dark:divide-gray-700/50">
+                        {% for n in notifications %}
+                        <li class="px-6 py-4 flex justify-between items-start hover:bg-yellow-50/50 dark:hover:bg-yellow-900/10 transition">
+                            <div class="flex-1 pr-4">
+                                <p class="text-sm font-bold text-gray-800 dark:text-gray-200">{{ n.message }}</p>
+                                <p class="text-xs text-gray-500 mt-1">{{ n.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                            </div>
+                            <a href="{{ url_for('teacher.mark_notification_read', notif_id=n.id) }}" class="text-gray-400 hover:text-green-500 transition-colors p-1"><i class="fas fa-check-circle text-lg"></i></a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <div class="p-8 text-center text-gray-500 text-sm h-full flex flex-col justify-center items-center">
+                        <i class="fas fa-check-double text-4xl mb-3 text-gray-300 dark:text-gray-600"></i>
+                        You're all caught up!
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Class Analytics Chart -->
+            <div class="card rounded-2xl overflow-hidden shadow-md border border-gray-200 dark:border-gray-700 flex flex-col">
+                <div class="bg-gray-800 px-6 py-4 flex items-center justify-between">
+                    <h3 class="text-lg font-bold text-white"><i class="fas fa-chart-bar mr-2 text-brand-400"></i> Class Analytics</h3>
+                    <button id="chart-back-btn" class="hidden text-xs px-3 py-1.5 rounded bg-brand-600 hover:bg-brand-500 text-white font-bold transition shadow-sm" onclick="drillUp()"><i class="fas fa-arrow-left mr-1"></i> Back</button>
+                </div>
+                <div class="p-6 bg-white dark:bg-darkcard flex-1 flex items-center justify-center relative" style="min-height:320px;">
+                    <div id="chart-loading" class="hidden absolute inset-0 bg-white/80 dark:bg-darkcard/80 backdrop-blur-sm z-10 flex items-center justify-center">
+                        <i class="fas fa-circle-notch fa-spin text-3xl text-brand-500"></i>
+                    </div>
+                    <div class="relative w-full h-full"><canvas id="performanceChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Row 3: My Subjects + Active Quizzes — equal height -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+
+            <!-- My Subjects -->
+            <div class="card rounded-2xl overflow-hidden shadow-md border border-gray-200 dark:border-gray-700 flex flex-col">
+                <div class="bg-gray-800 px-6 py-4">
+                    <h3 class="text-lg font-bold text-white"><i class="fas fa-chalkboard-teacher mr-2 text-indigo-400"></i> My Subjects</h3>
+                </div>
+                <div class="flex-1 overflow-x-auto bg-white dark:bg-darkcard overflow-y-auto" style="max-height:320px;">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead class="bg-gray-50 dark:bg-gray-800/80 sticky top-0">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Subject</th>
+                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Class</th>
+                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 dark:divide-gray-700/50">
+                            {% for assign in assignments %}
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition">
+                                <td class="px-4 py-3 text-sm font-bold text-gray-900 dark:text-white">{{ assign.subject.name }}</td>
+                                <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{{ assign.target_class.name }}</td>
+                                <td class="px-4 py-3"><span class="px-2 py-1 text-xs bg-green-100 text-green-800 font-bold rounded-full dark:bg-green-900/50 dark:text-green-400">Active</span></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Active Weak Topic Quizzes -->
+            <div class="card rounded-2xl overflow-hidden border border-red-200 dark:border-red-900/50 shadow-md flex flex-col">
+                <div class="bg-gradient-to-r from-red-500 to-rose-600 px-6 py-4 flex items-center">
+                    <i class="fas fa-tasks text-white mr-2 text-lg"></i>
+                    <h3 class="text-lg font-bold text-white">Active Weak Topic Quizzes</h3>
+                </div>
+                <div class="flex-1 bg-white dark:bg-darkcard overflow-y-auto" style="max-height:320px;">
+                    {% if active_sessions %}
+                    <ul class="divide-y divide-gray-100 dark:divide-gray-700/50">
+                        {% for session in active_sessions %}
+                        <li class="px-5 py-4 flex flex-col hover:bg-gray-50 dark:hover:bg-gray-800/50 transition">
+                            <div class="flex justify-between items-start mb-2">
+                                <div>
+                                    <strong class="text-gray-900 dark:text-white block">{{ session.subject.name }}</strong>
+                                    <span class="text-xs text-gray-500 font-medium"><i class="fas fa-user text-gray-400 mr-1"></i> {{ session.assigned_student.username }}</span>
+                                </div>
+                                <a href="{{ url_for('teacher.stop_test', session_id=session.id) }}" class="px-3 py-1 text-xs font-bold text-red-600 border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 rounded-lg hover:bg-red-600 hover:text-white hover:border-red-600 transition">End Quiz</a>
+                            </div>
+                            <div class="text-xs text-indigo-600 dark:text-indigo-400 font-bold mb-3 bg-indigo-50 dark:bg-indigo-900/20 px-2 py-1 rounded inline-block w-max">Topic: {{ session.topics }}</div>
+                            <form action="{{ url_for('teacher.update_roadmap', session_id=session.id) }}" method="POST" class="mt-auto flex items-center bg-gray-50 dark:bg-gray-900/50 p-1.5 rounded-lg border border-gray-200 dark:border-gray-700">
+                                <input type="text" name="new_remarks" class="flex-1 text-xs bg-transparent border-none focus:ring-0 dark:text-white px-2 py-1 placeholder-gray-400" placeholder="Update roadmap AI..." required>
+                                <button type="submit" class="px-2 py-1.5 text-xs font-bold text-white bg-brand-500 hover:bg-brand-600 rounded-md transition shadow flex items-center"><i class="fas fa-sync-alt"></i></button>
+                            </form>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <div class="p-8 text-center text-gray-500 text-sm h-full flex flex-col justify-center items-center">
+                        <i class="fas fa-clipboard-list text-4xl mb-3 text-gray-300 dark:text-gray-600"></i>
+                        No active quizzes.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+        <!-- ATTENDANCE TAB -->
+    <div id="tab-attendance" class="hidden space-y-6">
+        <div class="card rounded-2xl overflow-hidden shadow-sm">
+            <div class="bg-gradient-to-r from-blue-600 to-brand-600 px-6 py-4">
+                <h3 class="text-lg font-bold text-white flex items-center">
+                    <i class="fas fa-calendar-check mr-2"></i> Record Daily Attendance
+                </h3>
+            </div>
+            <div class="p-6">
+                <form action="{{ url_for('teacher.mark_attendance') }}" method="POST">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date</label>
+                            <input type="date" name="date" id="att-date" class="w-full px-4 py-2 border rounded-lg focus:ring-brand-500 dark:bg-darkbase dark:border-gray-600 dark:text-white outline-none shrink" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Select Target Subject & Class</label>
+                            <select name="assignment_id" id="assignment-select" onchange="showClassStudents()" class="w-full px-4 py-2 border rounded-lg focus:ring-brand-500 dark:bg-darkbase dark:border-gray-600 dark:text-white outline-none" required>
+                                <option value="">-- Choose an Assignment --</option>
+                                {% for assign in assignments %}
+                                    <option value="{{ assign.id }}" data-class-id="{{ assign.class_id }}">{{ assign.target_class.name }} - {{ assign.subject.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="students-container" class="hidden">
+                        <div class="flex justify-between items-center mb-3">
+                            <h4 class="font-bold text-gray-900 dark:text-white">Active Students</h4>
+                            <span class="text-xs text-gray-500 dark:text-gray-400">Mark all accurately</span>
+                        </div>
+                        
+                        <div class="bg-gray-50 dark:bg-gray-800/50 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 divide-y divide-gray-200 dark:divide-gray-700">
+                            {% for student in my_students %}
+                            <div class="px-5 py-4 justify-between items-center student-row hidden transition hover:bg-gray-100 dark:hover:bg-gray-800" data-class-id="{{ student.class_id }}">
+                                <span class="font-bold text-gray-900 dark:text-gray-200">{{ student.username }}</span>
+                                <div class="flex space-x-6">
+                                    <label class="inline-flex items-center text-green-600 dark:text-green-400 cursor-pointer">
+                                        <input type="radio" name="attendance_{{ student.id }}" value="Present" class="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500" required disabled>
+                                        <span class="ml-2 font-medium">Present</span>
+                                    </label>
+                                    <label class="inline-flex items-center text-red-600 dark:text-red-400 cursor-pointer">
+                                        <input type="radio" name="attendance_{{ student.id }}" value="Absent" class="w-4 h-4 text-red-600 border-gray-300 focus:ring-red-500" disabled>
+                                        <span class="ml-2 font-medium">Absent</span>
+                                    </label>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="mt-6 flex justify-end">
+                            <button type="submit" class="px-8 py-3 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-md transition-all transform hover:-translate-y-0.5">
+                                Save Attendance Records <i class="fas fa-save ml-2"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="no-students-msg" class="text-center py-12 bg-gray-50 dark:bg-gray-800/30 rounded-xl border border-gray-200 dark:border-gray-700">
+                        <i class="fas fa-users-slash text-4xl text-gray-300 dark:text-gray-600 mb-3"></i>
+                        <p class="text-gray-500 dark:text-gray-400 font-medium">Please select a class and subject from the dropdown above to load the roster.</p>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <!-- EXAM TAB -->
+    <div id="tab-exams" class="hidden space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Upload Marks -->
+            <div class="card rounded-2xl overflow-hidden shadow-sm border border-brand-200 dark:border-brand-900">
+                <div class="bg-gradient-to-r from-brand-600 to-indigo-600 px-6 py-4">
+                    <h3 class="text-lg font-bold text-white flex items-center">
+                        <i class="fas fa-file-signature mr-2"></i> Upload Marks
+                    </h3>
+                </div>
+                <div class="p-6">
+                    {% if active_exam_phases %}
+                    <form action="{{ url_for('teacher.bulk_upload_marks') }}" method="POST" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Exam Phase</label>
+                            <select name="exam_phase_id" id="bulk-phase" class="w-full px-4 py-2 border rounded-xl focus:ring-brand-500 dark:bg-darkbase dark:border-gray-600 dark:text-white outline-none" required>
+                                <option value="">-- Select Phase --</option>
+                                {% for phase in active_exam_phases %}
+                                    <option value="{{ phase.id }}">{{ phase.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Subject</label>
+                                <select name="subject_id" id="bulk-subject" class="w-full px-4 py-2 border rounded-xl focus:ring-brand-500 dark:bg-darkbase dark:border-gray-600 dark:text-white outline-none" required>
+                                    <option value="">-- Select Subject --</option>
+                                    {% for s in subjects %}
+                                        <option value="{{ s.id }}">{{ s.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Class</label>
+                                <select name="class_id" id="bulk-class" onchange="fetchStudentsForMarks()" class="w-full px-4 py-2 border rounded-xl focus:ring-brand-500 dark:bg-darkbase dark:border-gray-600 dark:text-white outline-none" required>
+                                    <option value="">-- Select Class --</option>
+                                    {% for c in classes %}
+                                        <option value="{{ c.id }}">{{ c.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div id="bulk-students-container" class="hidden mt-4">
+                            <h4 class="font-bold text-gray-900 dark:text-white mb-2">Enter Marks for Students</h4>
+                            <div class="grid grid-cols-2 gap-4 mb-3">
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-500">Max Marks for this Exam</label>
+                                    <input type="number" step="0.1" name="max_marks" id="bulk-max-marks" value="100" class="w-full px-3 py-1.5 text-sm border rounded focus:ring-brand-500 dark:bg-darkbase dark:border-gray-600 dark:text-white outline-none" required>
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 dark:bg-gray-800/50 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 max-h-[300px] overflow-y-auto">
+                                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                    <thead class="bg-gray-100 dark:bg-gray-800 sticky top-0">
+                                        <tr>
+                                            <th class="px-4 py-2 text-left text-xs font-bold text-gray-500">Student Name</th>
+                                            <th class="px-4 py-2 text-left text-xs font-bold text-gray-500">Marks Obtained</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="bulk-students-list" class="divide-y divide-gray-100 dark:divide-gray-700/50">
+                                        <!-- Populated via AJAX -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            <button type="submit" class="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl transition shadow mt-4">Save Draft Marks</button>
+                        </div>
+                        
+                        <div id="bulk-no-students" class="text-center py-6 bg-gray-50 dark:bg-gray-800/30 rounded-xl border border-gray-200 dark:border-gray-700 mt-4">
+                            <i class="fas fa-list text-3xl text-gray-300 dark:text-gray-600 mb-2"></i>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Select Phase, Subject, and Class to load roster.</p>
+                        </div>
+                    </form>
+                    
+                    <!-- Submission Gate -->
+                    <div class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <form action="{{ url_for('teacher.submit_all_marks') }}" method="POST">
+                            <button type="submit" id="submit-all-btn" class="w-full py-3 {% if all_drafts_done %}bg-green-600 hover:bg-green-700{% else %}bg-gray-400 cursor-not-allowed{% endif %} text-white font-bold rounded-xl transition shadow" {% if not all_drafts_done %}disabled{% endif %}>
+                                Final Submit to HOD
+                            </button>
+                            {% if not all_drafts_done %}
+                            <p class="text-xs text-center text-red-500 mt-2 font-medium">You must save drafts for ALL allotted subjects before submitting.</p>
+                            {% endif %}
+                        </form>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-8">
+                        <i class="fas fa-lock text-4xl text-gray-300 dark:text-gray-600 mb-3"></i>
+                        <p class="text-gray-500">No active exam phases. HOD must open a phase to allow uploads.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Request Correction -->
+            <div class="card rounded-2xl overflow-hidden shadow-sm border border-yellow-200 dark:border-yellow-900">
+                <div class="bg-gradient-to-r from-yellow-500 to-orange-500 px-6 py-4">
+                    <h3 class="text-lg font-bold text-white flex items-center">
+                        <i class="fas fa-edit mr-2"></i> Request Marks Correction
+                    </h3>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1 uppercase tracking-wider">Class</label>
+                            <select id="corr-class" class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-yellow-500 dark:bg-darkbase dark:border-gray-600 dark:text-white outline-none" onchange="loadCorrectionStudents()">
+                                <option value="">-- Select Class --</option>
+                                {% for c in classes %}
+                                    <option value="{{ c.id }}">{{ c.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1 uppercase tracking-wider">Subject</label>
+                            <select id="corr-subject" class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-yellow-500 dark:bg-darkbase dark:border-gray-600 dark:text-white outline-none" onchange="loadCorrectionStudents()">
+                                <option value="">-- Select Subject --</option>
+                                {% for s in subjects %}
+                                    <option value="{{ s.id }}">{{ s.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="corr-loading" class="hidden text-center py-4">
+                        <i class="fas fa-circle-notch fa-spin text-yellow-500 text-xl"></i>
+                    </div>
+
+                    <div id="corr-student-list" class="hidden">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mb-2 font-semibold uppercase tracking-wider">Latest Exam Results <span id="corr-phase-name" class="text-yellow-600 dark:text-yellow-400"></span></p>
+                        <div class="max-h-[250px] overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-xl mb-4">
+                            <table class="w-full text-sm">
+                                <thead class="bg-gray-50 dark:bg-gray-800 sticky top-0">
+                                    <tr>
+                                        <th class="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase">Student</th>
+                                        <th class="px-4 py-2 text-center text-xs font-bold text-gray-500 uppercase">Current Marks</th>
+                                        <th class="px-4 py-2 text-center text-xs font-bold text-gray-500 uppercase">New Marks</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="corr-tbody" class="divide-y divide-gray-100 dark:divide-gray-700"></tbody>
+                            </table>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1 uppercase tracking-wider">Reason for Correction</label>
+                            <textarea id="corr-reason" rows="2" class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-yellow-500 dark:bg-darkbase dark:border-gray-600 dark:text-white outline-none resize-none text-sm" placeholder="e.g. Marking error in Q3, re-evaluated..."></textarea>
+                        </div>
+                        <button onclick="submitAllCorrections()" class="w-full mt-3 py-3 bg-yellow-500 hover:bg-yellow-600 text-white font-bold rounded-xl transition shadow flex justify-center items-center">
+                            <i class="fas fa-paper-plane mr-2"></i> Submit Changed Marks to HOD
+                        </button>
+                        <p id="corr-status" class="hidden text-center text-sm font-semibold mt-2"></p>
+                    </div>
+
+                    <div id="corr-empty" class="hidden text-center py-6 text-gray-400">
+                        <i class="fas fa-info-circle text-2xl mb-2"></i>
+                        <p class="text-sm">No results found for this class & subject in the latest exam phase.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Tab Switching Logic
+    function switchTab(tabId) {
+        document.getElementById('tab-overview').classList.add('hidden');
+        document.getElementById('tab-attendance').classList.add('hidden');
+        document.getElementById('tab-exams').classList.add('hidden');
+        document.getElementById('tab-' + tabId).classList.remove('hidden');
+
+        const overviewBtn = document.getElementById('tab-btn-overview');
+        const attBtn = document.getElementById('tab-btn-attendance');
+        const examBtn = document.getElementById('tab-btn-exams');
+
+        [overviewBtn, attBtn, examBtn].forEach(b => b.classList.remove('active'));
+
+        if(tabId === 'overview') {
+            document.getElementById('tab-overview').classList.add('grid');
+            overviewBtn.classList.add('active');
+        } else if(tabId === 'attendance') {
+            document.getElementById('tab-overview').classList.remove('grid');
+            attBtn.classList.add('active');
+        } else if(tabId === 'exams') {
+            document.getElementById('tab-overview').classList.remove('grid');
+            examBtn.classList.add('active');
+        }
+    }
+
+    // Set Default Date to Today
+    document.addEventListener("DOMContentLoaded", () => {
+        let today = new Date().toISOString().split('T')[0];
+        document.getElementById("att-date").value = today;
+    });
+
+    // Handle Class Selection
+    function showClassStudents() {
+        const sel = document.getElementById('assignment-select');
+        const selectedOption = sel.options[sel.selectedIndex];
+        const classId = selectedOption ? selectedOption.getAttribute('data-class-id') : null;
+        
+        const container = document.getElementById('students-container');
+        const rows = document.querySelectorAll('.student-row');
+        const emptyMsg = document.getElementById('no-students-msg');
+        
+        if(!classId || sel.value === "") {
+            container.classList.add('hidden');
+            emptyMsg.classList.remove('hidden');
+            emptyMsg.innerHTML = '<i class="fas fa-users-slash text-4xl text-gray-300 dark:text-gray-600 mb-3"></i><p class="text-gray-500 dark:text-gray-400 font-medium">Please select a class and subject from the dropdown above to load the roster.</p>';
+            return;
+        }
+        
+        emptyMsg.classList.add('hidden');
+        container.classList.remove('hidden');
+        
+        let hasStudents = false;
+        rows.forEach(row => {
+            if(row.getAttribute('data-class-id') === classId) {
+                row.classList.remove('hidden');
+                row.classList.add('flex');
+                row.querySelectorAll('input').forEach(i => i.disabled = false);
+                hasStudents = true;
+            } else {
+                row.classList.add('hidden');
+                row.classList.remove('flex');
+                row.querySelectorAll('input').forEach(i => i.disabled = true);
+            }
+        });
+
+        if(!hasStudents) {
+            container.classList.add('hidden');
+            emptyMsg.classList.remove('hidden');
+            emptyMsg.innerHTML = '<i class="fas fa-users-slash text-4xl text-gray-300 dark:text-gray-600 mb-3"></i><p class="text-gray-500 dark:text-gray-400 font-medium">No students are currently mapped to this class.</p>';
+        }
+    }
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Handle Fetching Students for Bulk Marks Upload
+    function fetchStudentsForMarks() {
+        const classId = document.getElementById('bulk-class').value;
+        const subjectId = document.getElementById('bulk-subject').value;
+        const phaseId = document.getElementById('bulk-phase').value;
+        
+        const container = document.getElementById('bulk-students-container');
+        const emptyMsg = document.getElementById('bulk-no-students');
+        const list = document.getElementById('bulk-students-list');
+        
+        if(!classId || !subjectId || !phaseId) {
+            container.classList.add('hidden');
+            emptyMsg.classList.remove('hidden');
+            return;
+        }
+
+        fetch(`/teacher/get_students_for_class/${classId}?subject_id=${subjectId}&phase_id=${phaseId}`)
+            .then(res => res.json())
+            .then(data => {
+                list.innerHTML = '';
+                if(data.students.length > 0) {
+                    data.students.forEach(student => {
+                        let draftValue = student.existing_mark !== null ? student.existing_mark : '';
+                        list.innerHTML += `
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                                <td class="px-4 py-2 text-sm font-bold text-gray-900 dark:text-white">
+                                    ${student.username}
+                                </td>
+                                <td class="px-4 py-2">
+                                    <input type="number" step="0.1" name="marks_${student.id}" value="${draftValue}" class="w-24 px-2 py-1 text-sm border rounded focus:ring-brand-500 dark:bg-darkbase dark:border-gray-600 dark:text-white outline-none">
+                                </td>
+                            </tr>
+                        `;
+                    });
+                    emptyMsg.classList.add('hidden');
+                    container.classList.remove('hidden');
+                } else {
+                    container.classList.add('hidden');
+                    emptyMsg.classList.remove('hidden');
+                    emptyMsg.innerHTML = '<i class="fas fa-user-slash text-3xl text-gray-300 dark:text-gray-600 mb-2"></i><p class="text-sm text-gray-500 dark:text-gray-400">No students mapped or assignments missing.</p>';
+                }
+            })
+            .catch(err => console.error("Error fetching students:", err));
+    }
+
+    // ---- Marks Correction Logic ----
+    let correctionData = []; // store fetched results for comparison
+
+    function loadCorrectionStudents() {
+        const classId = document.getElementById('corr-class').value;
+        const subjectId = document.getElementById('corr-subject').value;
+        const loading = document.getElementById('corr-loading');
+        const listDiv = document.getElementById('corr-student-list');
+        const emptyDiv = document.getElementById('corr-empty');
+        const tbody = document.getElementById('corr-tbody');
+        const phaseName = document.getElementById('corr-phase-name');
+        const statusEl = document.getElementById('corr-status');
+
+        listDiv.classList.add('hidden');
+        emptyDiv.classList.add('hidden');
+        statusEl.classList.add('hidden');
+        correctionData = [];
+
+        if (!classId || !subjectId) return;
+
+        loading.classList.remove('hidden');
+
+        fetch(`/teacher/api/correction_students?class_id=${classId}&subject_id=${subjectId}`)
+            .then(res => res.json())
+            .then(data => {
+                loading.classList.add('hidden');
+                tbody.innerHTML = '';
+
+                if (data.error) {
+                    emptyDiv.querySelector('p').textContent = data.error;
+                    emptyDiv.classList.remove('hidden');
+                    return;
+                }
+
+                if (data.students && data.students.length > 0) {
+                    correctionData = data.students;
+                    phaseName.textContent = `(${data.phase_name})`;
+                    data.students.forEach(s => {
+                        const row = document.createElement('tr');
+                        row.className = 'hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors';
+                        row.innerHTML = `
+                            <td class="px-4 py-2 text-gray-900 dark:text-white font-medium">${s.student_name}</td>
+                            <td class="px-4 py-2 text-center font-bold text-gray-700 dark:text-gray-300">${s.marks_obtained} / ${s.max_marks}</td>
+                            <td class="px-4 py-2 text-center">
+                                <input type="number" step="0.1" min="0" max="${s.max_marks}" 
+                                       data-result-id="${s.result_id}" data-original="${s.marks_obtained}"
+                                       value="${s.marks_obtained}" 
+                                       class="corr-mark-input w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-lg text-center dark:bg-darkbase dark:text-white outline-none focus:ring-1 focus:ring-yellow-500 text-sm">
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                    listDiv.classList.remove('hidden');
+                } else {
+                    emptyDiv.classList.remove('hidden');
+                }
+            })
+            .catch(err => {
+                loading.classList.add('hidden');
+                console.error(err);
+            });
+    }
+
+    function submitAllCorrections() {
+        const reason = document.getElementById('corr-reason').value.trim();
+        if (!reason) {
+            alert('Please provide a reason for the correction.');
+            document.getElementById('corr-reason').focus();
+            return;
+        }
+
+        // Collect only changed marks
+        const inputs = document.querySelectorAll('.corr-mark-input');
+        const changes = [];
+        inputs.forEach(input => {
+            const original = parseFloat(input.dataset.original);
+            const newVal = parseFloat(input.value);
+            if (newVal !== original) {
+                changes.push({
+                    exam_result_id: parseInt(input.dataset.resultId),
+                    new_marks: newVal
+                });
+            }
+        });
+
+        if (changes.length === 0) {
+            alert('No marks have been changed. Modify at least one student\'s marks before submitting.');
+            return;
+        }
+
+        const statusEl = document.getElementById('corr-status');
+
+        fetch('/teacher/request_correction', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ corrections: changes, reason: reason })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                statusEl.textContent = data.message;
+                statusEl.className = 'text-center text-sm font-semibold mt-2 text-green-600';
+                statusEl.classList.remove('hidden');
+                document.getElementById('corr-reason').value = '';
+                loadCorrectionStudents(); // Refresh
+            } else {
+                statusEl.textContent = data.error || 'Failed to submit.';
+                statusEl.className = 'text-center text-sm font-semibold mt-2 text-red-600';
+                statusEl.classList.remove('hidden');
+            }
+        })
+        .catch(err => {
+            statusEl.textContent = 'Network error. Try again.';
+            statusEl.className = 'text-center text-sm font-semibold mt-2 text-red-600';
+            statusEl.classList.remove('hidden');
+        });
+    }
+</script>
+<script>
+    Chart.defaults.color = document.documentElement.classList.contains('dark') ? '#9ca3af' : '#4b5563';
+    Chart.defaults.font.family = "'Inter', sans-serif";
+    
+    // State for Drilldown
+    let chartPath = []; // Array of objects: {level: 'base'|'class'|'subject', id: null, name: 'Classes'}
+    let currentItems = []; // items returned from API to map clicks to IDs
+    let currentLevel = 'base';
+    let currentClassId = null;
+    let currentSubjectId = null;
+
+    const ctx = document.getElementById('performanceChart').getContext('2d');
+    let performanceChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: [],
+            datasets: [
+                {
+                    label: 'KPI Score',
+                    data: [],
+                    backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                    borderRadius: 4,
+                },
+                {
+                    label: 'Attendance (%)',
+                    data: [],
+                    backgroundColor: 'rgba(16, 185, 129, 0.5)',
+                    borderRadius: 4,
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            onClick: (e, activeEls) => {
+                if (activeEls.length > 0) {
+                    const dataIndex = activeEls[0].index;
+                    const clickedItem = currentItems[dataIndex];
+                    if(clickedItem && currentLevel !== 'subject') {
+                        drillDown(clickedItem);
+                    }
+                }
+            },
+            onHover: (event, chartElement) => {
+                event.native.target.style.cursor = chartElement[0] && currentLevel !== 'subject' ? 'pointer' : 'default';
+            },
+            plugins: { 
+                legend: { position: 'top' },
+                tooltip: {
+                    enabled: true,
+                    mode: 'index',
+                    intersect: false,
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) { label += ': '; }
+                            if (context.parsed.y !== null) {
+                                label += context.parsed.y + (context.datasetIndex === 1 ? '%' : '');
+                            }
+                            return label;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: { 
+                    beginAtZero: true, 
+                    max: 100,
+                    title: {
+                        display: true,
+                        text: 'Performance Metric (Score/%)',
+                        font: { weight: 'bold' }
+                    },
+                    grid: { color: document.documentElement.classList.contains('dark') ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)' }
+                },
+                x: { 
+                    title: {
+                        display: true,
+                        text: 'Classes',
+                        font: { weight: 'bold' }
+                    },
+                    grid: { display: false } 
+                }
+            }
+        }
+    });
+
+    function loadChartData() {
+        const loader = document.getElementById('chart-loading');
+        loader.classList.remove('hidden');
+        
+        let url = `/api/analytics/drilldown?view_role=teacher`;
+        if (currentClassId) url += `&class_id=${currentClassId}`;
+        if (currentSubjectId) url += `&subject_id=${currentSubjectId}`;
+        
+        fetch(url)
+            .then(res => res.json())
+            .then(data => {
+                currentItems = data.items;
+                performanceChart.data.labels = data.labels;
+                performanceChart.data.datasets[0].data = data.data;
+                performanceChart.data.datasets[1].data = data.attendance_data || [];
+                
+                // Dynamic Axis Titles
+                let xAxisTitle = 'Classes';
+                if (currentLevel === 'base') {
+                    performanceChart.data.datasets[0].label = 'Class KPI';
+                    performanceChart.data.datasets[0].backgroundColor = 'rgba(59, 130, 246, 0.7)';
+                    performanceChart.data.datasets[1].label = 'Class Attendance (%)';
+                    performanceChart.data.datasets[1].backgroundColor = 'rgba(16, 185, 129, 0.5)';
+                    xAxisTitle = 'Classes';
+                } else if (currentLevel === 'class') {
+                    performanceChart.data.datasets[0].label = 'Subject KPI';
+                    performanceChart.data.datasets[0].backgroundColor = 'rgba(139, 92, 246, 0.7)';
+                    performanceChart.data.datasets[1].label = 'Subject Attendance (%)';
+                    performanceChart.data.datasets[1].backgroundColor = 'rgba(16, 185, 129, 0.5)';
+                    xAxisTitle = 'Subjects';
+                } else if (currentLevel === 'subject') {
+                    performanceChart.data.datasets[0].label = 'Student KPI';
+                    performanceChart.data.datasets[0].backgroundColor = 'rgba(236, 72, 153, 0.7)';
+                    performanceChart.data.datasets[1].label = 'Student Attendance (%)';
+                    performanceChart.data.datasets[1].backgroundColor = 'rgba(16, 185, 129, 0.5)';
+                    xAxisTitle = 'Students';
+                }
+                
+                performanceChart.options.scales.x.title.text = xAxisTitle;
+                performanceChart.update();
+                updateBackButton();
+            })
+            .catch(err => console.error(err))
+            .finally(() => {
+                loader.classList.add('hidden');
+            });
+    }
+
+    function drillDown(item) {
+        chartPath.push({ level: currentLevel, classId: currentClassId, subjectId: currentSubjectId });
+        
+        if (currentLevel === 'base') {
+            currentLevel = 'class';
+            currentClassId = item.id;
+        } else if (currentLevel === 'class') {
+            currentLevel = 'subject';
+            currentSubjectId = item.id;
+        }
+        
+        loadChartData();
+    }
+
+    function drillUp() {
+        if (chartPath.length === 0) return;
+        
+        const prevState = chartPath.pop();
+        currentLevel = prevState.level;
+        currentClassId = prevState.classId;
+        currentSubjectId = prevState.subjectId;
+        
+        loadChartData();
+    }
+
+    function updateBackButton() {
+        const backBtn = document.getElementById('chart-back-btn');
+        if (chartPath.length > 0) {
+            backBtn.classList.remove('hidden');
+        } else {
+            backBtn.classList.add('hidden');
+        }
+    }
+
+    // Initialize Chart on load
+    document.addEventListener("DOMContentLoaded", () => {
+        loadChartData();
+    });
+
+    const observer = new MutationObserver(() => {
+        const isDark = document.documentElement.classList.contains('dark');
+        Chart.defaults.color = isDark ? '#9ca3af' : '#4b5563';
+        const chartInstance = Chart.instances[0];
+        if(chartInstance) {
+            chartInstance.options.scales.y.grid.color = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+            chartInstance.update();
+        }
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+</script>
+{% endblock %}

@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-8 py-8 px-4 sm:px-0">
+    
+    <div class="text-center space-y-3 mb-10">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 mb-2">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+        </div>
+        <h2 class="text-4xl md:text-5xl font-black text-gray-900 dark:text-white tracking-tight">Anonymous Hotline</h2>
+        <p class="text-gray-500 dark:text-gray-400 text-lg max-w-2xl mx-auto">Your privacy is mathematically guaranteed. We use token-based tracking so no personally identifiable information is ever attached to your grievance.</p>
+    </div>
+
+    <!-- Alert Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="mb-6 rounded-xl p-4 font-bold border flex items-center shadow-sm
+                    {% if category == 'success' %}bg-green-50 border-green-200 text-green-800 dark:bg-green-900/30 dark:border-green-800/50 dark:text-green-400
+                    {% else %}bg-red-50 border-red-200 text-red-800 dark:bg-red-900/30 dark:border-red-800/50 dark:text-red-400{% endif %}">
+                    {% if category == 'success' %}
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    {% else %}
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    {% endif %}
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <!-- Left Column: Submission -->
+        <div class="lg:col-span-7 space-y-8">
+            <div class="card p-8 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl relative overflow-hidden h-full">
+                <div class="absolute -left-20 -top-20 w-48 h-48 bg-brand-500 opacity-10 rounded-full blur-3xl"></div>
+                <div class="relative z-10">
+                    <h3 class="text-2xl font-bold mb-2 text-gray-900 dark:text-white flex items-center">
+                        <i class="fas fa-edit text-brand-500 mr-3"></i> Submit a Grievance
+                    </h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-6 pb-4 border-b border-gray-100 dark:border-gray-800">
+                        Please provide specific details about the issue. Our AI moderation ensures that all grievances remain professional. Profanity and abuse will automatically be rejected.
+                    </p>
+                    
+                    <form action="{{ url_for('student.submit_complaint') }}" method="POST" class="space-y-6">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Complaint Details</label>
+                            <textarea name="complaint_text" rows="8" class="w-full bg-white dark:bg-darkbase border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-xl focus:ring-brand-500 focus:border-brand-500 block p-4 shadow-sm resize-none transition-shadow hover:shadow-md" placeholder="Clearly describe the situation. Do not include your name or contact info to remain fully anonymous..." required></textarea>
+                        </div>
+                        
+                        <div class="flex items-center justify-between pt-2">
+                            <div class="text-xs text-gray-500 dark:text-gray-400 flex items-center">
+                                <i class="fas fa-robot mr-1"></i> AI Moderated
+                            </div>
+                            <button type="submit" class="inline-flex items-center justify-center text-white bg-brand-600 hover:bg-brand-700 font-bold rounded-xl text-sm px-8 py-3.5 transition shadow-lg hover:shadow-brand-500/30 hover:-translate-y-0.5">
+                                Securely Submit <i class="fas fa-lock ml-2"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Tracking -->
+        <div class="lg:col-span-5 space-y-8">
+            
+
+            <!-- Active Tracker Result -->
+            {% if tracked_complaint %}
+            <div class="card p-6 rounded-2xl border-2 border-indigo-500 dark:border-indigo-600 shadow-2xl relative overflow-hidden animate-fadeIn">
+                <div class="absolute -right-10 -top-10 w-32 h-32 bg-indigo-500 opacity-20 rounded-full blur-3xl"></div>
+                
+                <div class="relative z-10">
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider shadow-sm
+                            {% if tracked_complaint.status == 'Pending' %} bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-400
+                            {% elif tracked_complaint.status == 'Resolved' %} bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-400
+                            {% else %} bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-400 {% endif %}">
+                            <span class="mr-1">●</span> {{ tracked_complaint.status }}
+                        </span>
+                        <span class="text-xs font-bold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-md">Assigned: {{ tracked_complaint.assigned_to }}</span>
+                    </div>
+
+                    <h4 class="text-xl font-bold text-gray-900 dark:text-white mb-1">Ticket #<span class="font-mono text-indigo-600 dark:text-indigo-400">{{ tracked_complaint.secret_token }}</span></h4>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-5">Submitted on {{ tracked_complaint.created_at.strftime('%B %d, %Y') }}</p>
+
+                    <div class="space-y-4">
+                        <div class="bg-white dark:bg-darkbase rounded-xl p-4 border border-gray-100 dark:border-gray-700 text-sm leading-relaxed text-gray-700 dark:text-gray-300 shadow-inner">
+                            <span class="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Your Grievance</span>
+                            {{ tracked_complaint.text }}
+                        </div>
+
+                        {% if tracked_complaint.hod_response %}
+                        <div class="bg-indigo-50 dark:bg-indigo-900/30 rounded-xl p-4 border border-indigo-100 dark:border-indigo-800/50 text-sm leading-relaxed text-indigo-900 dark:text-indigo-100">
+                            <span class="block text-xs font-bold text-indigo-500 dark:text-indigo-400 uppercase tracking-widest mb-1">Official Response</span>
+                            {{ tracked_complaint.hod_response }}
+                        </div>
+                        {% endif %}
+
+                        {% if tracked_complaint.status == 'Resolved' and not tracked_complaint.is_escalated_to_director %}
+                        <div class="pt-2">
+                            <form action="{{ url_for('student.reopen_complaint', token=tracked_complaint.secret_token) }}" method="POST">
+                                <button type="submit" class="w-full inline-flex justify-center items-center px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-700 dark:bg-red-900/20 dark:hover:bg-red-900/40 dark:text-red-400 text-xs font-bold rounded-lg transition border border-red-200 dark:border-red-800/50 group">
+                                    <i class="fas fa-exclamation-triangle mr-2 group-hover:scale-110 transition-transform"></i>
+                                    Unsatisfied? Escalate to Director
+                                </button>
+                            </form>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+
+    <!-- My Active Complaints -->
+    {% if my_complaints %}
+    <div class="pt-10 mt-10 border-t border-gray-200 dark:border-gray-800">
+        <h3 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white flex items-center">
+            <i class="fas fa-history text-gray-400 mr-3"></i> My Past Submissions
+        </h3>
+        
+        <div class="overflow-x-auto rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
+            <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-800 dark:text-gray-300">
+                    <tr>
+                        <th scope="col" class="px-6 py-4 rounded-tl-xl">Token</th>
+                        <th scope="col" class="px-6 py-4">Date</th>
+                        <th scope="col" class="px-6 py-4">Status</th>
+                        <th scope="col" class="px-6 py-4 max-w-xs">Preview</th>
+                        <th scope="col" class="px-6 py-4 text-right rounded-tr-xl">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-darkcard">
+                    {% for c in my_complaints %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                        <td class="px-6 py-4 font-mono font-bold text-gray-900 dark:text-white">
+                            {{ c.secret_token }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {{ c.created_at.strftime('%b %d, %Y') }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2.5 py-1 text-xs font-bold rounded-full 
+                                {% if c.status == 'Pending' %} bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400
+                                {% elif c.status == 'Resolved' %} bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400
+                                {% else %} bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 {% endif %}">
+                                {{ c.status }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 max-w-xs truncate italic text-gray-500 dark:text-gray-400">
+                            "{{ c.text[:40] }}{% if c.text|length > 40 %}...{% endif %}"
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <form action="{{ url_for('student.track_complaint') }}" method="POST" class="inline">
+                                <input type="hidden" name="secret_token" value="{{ c.secret_token }}">
+                                <button type="submit" class="font-bold text-brand-600 dark:text-brand-400 hover:underline">View <i class="fas fa-chevron-right ml-1 text-xs"></i></button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+<style>
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.animate-fadeIn {
+    animation: fadeIn 0.4s ease-out forwards;
+}
+</style>
+{% endblock %}

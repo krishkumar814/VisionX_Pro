@@ -1,0 +1,314 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-6 h-full flex flex-col pt-10">
+    <div class="mb-4 text-center">
+        <h2 class="text-4xl font-black text-gray-900 dark:text-white tracking-tighter">Global University Director View</h2>
+        <p class="text-md mt-2 text-gray-500 dark:text-gray-400">High-level oversight of all departments operating under VisionX Pro.</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 flex-grow">
+        <!-- Global Performance Monitors -->
+        <div class="lg:col-span-7 flex flex-col">
+            <div class="card w-full rounded-3xl overflow-hidden border border-brand-500/20 shadow-2xl flex-grow flex flex-col">
+                <div class="bg-gray-900 dark:bg-black px-8 py-5 border-b border-gray-800 flex items-center justify-between">
+                    <h3 class="text-xl font-bold text-white flex items-center">
+                        <i class="fas fa-satellite-dish w-6 h-6 mr-3 text-purple-500"></i>
+                        Department Performance Matrix
+                    </h3>
+                    <div class="flex items-center space-x-4">
+                        <button id="chart-back-btn" class="hidden text-xs px-3 py-1.5 rounded bg-brand-600 hover:bg-brand-500 text-white font-bold transition shadow-sm z-20" onclick="drillUp()">
+                            <i class="fas fa-arrow-left mr-1"></i> Back
+                        </button>
+                        <span class="animate-pulse relative flex h-3 w-3">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                        </span>
+                    </div>
+                </div>
+                <div class="p-8 bg-white dark:bg-darkcard flex-grow flex flex-col items-center justify-center">
+                    <div class="relative w-full h-[300px] mb-6">
+                        <div id="chart-loading" class="hidden absolute inset-0 bg-white/80 dark:bg-darkcard/80 backdrop-blur-sm z-10 flex items-center justify-center">
+                            <i class="fas fa-circle-notch fa-spin text-3xl text-brand-500"></i>
+                        </div>
+                        <canvas id="directorChart"></canvas>
+                    </div>
+                    
+                    <div class="w-full grid grid-cols-2 md:grid-cols-4 gap-3 mt-auto">
+                        {% for stat in dept_stats %}
+                        <a href="{{ url_for('hod_director.department_drilldown', dept_id=stat.department.id) }}" class="block bg-gray-50 dark:bg-black/20 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-brand-400 dark:hover:border-brand-600 transition-all cursor-pointer group">
+                            <p class="text-sm font-bold text-gray-800 dark:text-white truncate group-hover:text-brand-500 transition-colors" title="{{ stat.department.name }}">{{ stat.department.name }}</p>
+                            <p class="text-xs text-indigo-500 dark:text-indigo-400 font-semibold mt-0.5 truncate">HOD: {{ stat.department.hod.username if stat.department.hod else 'Unassigned' }}</p>
+                            <div class="mt-2 flex items-center justify-between">
+                                <span class="text-[10px] uppercase tracking-wider font-bold text-gray-400">Overall KPI</span>
+                                <span class="text-xs font-black text-brand-600 dark:text-brand-400">{{ stat.kpi }}</span>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Escalated Complaints Inbox -->
+        <div class="lg:col-span-5 flex flex-col">
+            <div class="card rounded-3xl overflow-hidden border border-red-500/50 shadow-2xl flex-grow flex flex-col bg-red-50/10 dark:bg-red-900/10">
+                <div class="bg-gradient-to-r from-red-700 to-red-900 px-6 py-5 flex items-center justify-between border-b border-red-500/50 shadow-inner">
+                    <h3 class="text-lg font-black text-white flex items-center tracking-wide uppercase">
+                        <i class="fas fa-exclamation-triangle text-yellow-400 mr-3 animate-pulse"></i>
+                        Critical Escalations
+                    </h3>
+                    {% if complaints %}
+                    <span class="bg-white text-red-800 text-xs font-bold px-2.5 py-0.5 rounded-full shadow-sm">{{ complaints|length }} Action Required</span>
+                    {% endif %}
+                </div>
+                
+                <div class="p-0 flex-grow overflow-y-auto max-h-[500px]">
+                    {% if complaints %}
+                        <div class="divide-y divide-red-200 dark:divide-red-900/50">
+                        {% for c in complaints %}
+                            <div class="p-6 bg-white dark:bg-darkcard hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors relative group">
+                                <div class="absolute top-0 left-0 w-1 h-full bg-red-600 group-hover:bg-red-500 transition-colors"></div>
+                                <div class="flex items-center space-x-4 mb-3">
+                                    <span class="text-xs font-bold px-2 py-1 bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300 rounded border border-red-200 dark:border-red-800">ESCALATED</span>
+                                    <span class="text-xs text-gray-500 dark:text-gray-400 font-mono tracking-widest">TOKEN: {{ c.secret_token }}</span>
+                                    <span class="text-xs text-gray-500 dark:text-gray-400 ml-auto">{{ c.created_at.strftime('%b %d, %Y') }}</span>
+                                </div>
+                                <p class="text-sm text-gray-900 dark:text-gray-100 leading-relaxed mb-4 italic">"{{ c.text }}"</p>
+                                
+                                <form action="{{ url_for('hod_director.dir_resolve_complaint') }}" method="POST" class="mt-4 flex flex-col space-y-2 bg-gray-50 dark:bg-black/20 p-3 rounded-lg border border-gray-100 dark:border-gray-800">
+                                    <input type="hidden" name="complaint_id" value="{{ c.id }}">
+                                    <input type="text" name="hod_response" class="w-full text-xs p-2.5 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-darkbase text-gray-900 dark:text-white outline-none focus:ring-1 focus:ring-red-500" placeholder="Terminal Director Resolution..." required>
+                                    <button type="submit" class="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded shadow-sm transition-colors flex justify-center items-center">
+                                        <i class="fas fa-gavel mr-2"></i> Execute Force Resolve
+                                    </button>
+                                </form>
+                            </div>
+                        {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center text-gray-500 dark:text-gray-400 h-full flex flex-col justify-center items-center py-20">
+                            <i class="fas fa-shield-alt text-6xl text-gray-300 dark:text-gray-700 mb-4"></i>
+                            <p class="text-lg font-bold text-gray-600 dark:text-gray-300">All Clear</p>
+                            <p class="text-sm mt-1">No critical escalations at this time.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    Chart.defaults.color = document.documentElement.classList.contains('dark') ? '#9ca3af' : '#4b5563';
+    Chart.defaults.font.family = "'Inter', sans-serif";
+    
+    // State for Drilldown
+    let chartPath = []; // Array of objects
+    let currentItems = []; // items returned from API
+    let currentLevel = 'base';
+    let currentDeptId = null;
+    let currentTeacherId = null;
+    let currentClassId = null;
+    let currentSubjectId = null;
+
+    const ctx = document.getElementById('directorChart').getContext('2d');
+    let directorChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: [],
+            datasets: [
+                {
+                    label: 'KPI Score',
+                    data: [],
+                    backgroundColor: 'rgba(236, 72, 153, 0.8)',
+                    borderRadius: 4,
+                },
+                {
+                    label: 'Attendance (%)',
+                    data: [],
+                    backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                    borderRadius: 4,
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            onClick: (e, activeEls) => {
+                if (activeEls.length > 0) {
+                    const dataIndex = activeEls[0].index;
+                    const clickedItem = currentItems[dataIndex];
+                    if(clickedItem && currentLevel !== 'subject') {
+                        drillDown(clickedItem);
+                    }
+                }
+            },
+            onHover: (event, chartElement) => {
+                event.native.target.style.cursor = chartElement[0] && currentLevel !== 'subject' ? 'pointer' : 'default';
+            },
+            plugins: {
+                legend: { position: 'top' },
+                tooltip: {
+                    enabled: true,
+                    mode: 'index',
+                    intersect: false,
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) { label += ': '; }
+                            if (context.parsed.y !== null) {
+                                label += context.parsed.y + (context.datasetIndex === 1 ? '%' : '');
+                            }
+                            return label;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    title: {
+                        display: true,
+                        text: 'Performance Metric (Score/%)',
+                        font: { weight: 'bold' }
+                    },
+                    grid: { color: document.documentElement.classList.contains('dark') ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)' }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Departments',
+                        font: { weight: 'bold' }
+                    },
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+
+    function loadChartData() {
+        const loader = document.getElementById('chart-loading');
+        loader.classList.remove('hidden');
+        
+        let url = `/api/analytics/drilldown?view_role=director`;
+        if (currentDeptId) url += `&dept_id=${currentDeptId}`;
+        if (currentTeacherId) url += `&teacher_id=${currentTeacherId}`;
+        if (currentClassId) url += `&class_id=${currentClassId}`;
+        if (currentSubjectId) url += `&subject_id=${currentSubjectId}`;
+        
+        fetch(url)
+            .then(res => res.json())
+            .then(data => {
+                currentItems = data.items;
+                directorChart.data.labels = data.labels;
+                directorChart.data.datasets[0].data = data.data;
+                directorChart.data.datasets[1].data = data.attendance_data || [];
+                
+                // Dynamic Axis Titles
+                let xAxisTitle = 'Departments';
+                if (currentLevel === 'base') {
+                    directorChart.data.datasets[0].label = 'Department KPI';
+                    directorChart.data.datasets[0].backgroundColor = 'rgba(236, 72, 153, 0.8)';
+                    directorChart.data.datasets[1].label = 'Department Attendance (%)';
+                    directorChart.data.datasets[1].backgroundColor = 'rgba(59, 130, 246, 0.5)';
+                    xAxisTitle = 'Departments';
+                } else if (currentLevel === 'dept') {
+                    directorChart.data.datasets[0].label = 'Teacher KPI';
+                    directorChart.data.datasets[0].backgroundColor = 'rgba(59, 130, 246, 0.7)';
+                    directorChart.data.datasets[1].label = 'Teacher Attendance (%)';
+                    directorChart.data.datasets[1].backgroundColor = 'rgba(16, 185, 129, 0.5)';
+                    xAxisTitle = 'Teachers';
+                } else if (currentLevel === 'teacher') {
+                    directorChart.data.datasets[0].label = 'Class KPI';
+                    directorChart.data.datasets[0].backgroundColor = 'rgba(139, 92, 246, 0.7)';
+                    directorChart.data.datasets[1].label = 'Class Attendance (%)';
+                    directorChart.data.datasets[1].backgroundColor = 'rgba(16, 185, 129, 0.5)';
+                    xAxisTitle = 'Classes';
+                } else if (currentLevel === 'class') {
+                    directorChart.data.datasets[0].label = 'Subject KPI';
+                    directorChart.data.datasets[0].backgroundColor = 'rgba(16, 185, 129, 0.7)';
+                    directorChart.data.datasets[1].label = 'Subject Attendance (%)';
+                    directorChart.data.datasets[1].backgroundColor = 'rgba(34, 197, 94, 0.4)';
+                    xAxisTitle = 'Subjects';
+                } else if (currentLevel === 'subject') {
+                    directorChart.data.datasets[0].label = 'Student KPI';
+                    directorChart.data.datasets[0].backgroundColor = 'rgba(236, 72, 153, 0.7)';
+                    directorChart.data.datasets[1].label = 'Student Attendance (%)';
+                    directorChart.data.datasets[1].backgroundColor = 'rgba(16, 185, 129, 0.5)';
+                    xAxisTitle = 'Students';
+                }
+                
+                directorChart.options.scales.x.title.text = xAxisTitle;
+                directorChart.update();
+                updateBackButton();
+            })
+            .catch(err => console.error(err))
+            .finally(() => {
+                loader.classList.add('hidden');
+            });
+    }
+
+    function drillDown(item) {
+        chartPath.push({ level: currentLevel, deptId: currentDeptId, teacherId: currentTeacherId, classId: currentClassId, subjectId: currentSubjectId });
+        
+        if (currentLevel === 'base') {
+            currentLevel = 'dept';
+            currentDeptId = item.id;
+        } else if (currentLevel === 'dept') {
+            currentLevel = 'teacher';
+            currentTeacherId = item.id;
+        } else if (currentLevel === 'teacher') {
+            currentLevel = 'class';
+            currentClassId = item.id;
+        } else if (currentLevel === 'class') {
+            currentLevel = 'subject';
+            currentSubjectId = item.id;
+        }
+        
+        loadChartData();
+    }
+
+    function drillUp() {
+        if (chartPath.length === 0) return;
+        
+        const prevState = chartPath.pop();
+        currentLevel = prevState.level;
+        currentDeptId = prevState.deptId;
+        currentTeacherId = prevState.teacherId;
+        currentClassId = prevState.classId;
+        currentSubjectId = prevState.subjectId;
+        
+        loadChartData();
+    }
+
+    function updateBackButton() {
+        const backBtn = document.getElementById('chart-back-btn');
+        if (chartPath.length > 0) {
+            backBtn.classList.remove('hidden');
+        } else {
+            backBtn.classList.add('hidden');
+        }
+    }
+
+    // Initialize Chart on load
+    document.addEventListener("DOMContentLoaded", () => {
+        loadChartData();
+    });
+
+    // Handle theme toggle to adjust chart colors dynamically
+    const observer = new MutationObserver(() => {
+        const isDark = document.documentElement.classList.contains('dark');
+        Chart.defaults.color = isDark ? '#9ca3af' : '#4b5563';
+        const chartInstance = Chart.instances[0];
+        if(chartInstance) {
+            chartInstance.options.scales.y.grid.color = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+            chartInstance.update();
+        }
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+</script>
+{% endblock %}

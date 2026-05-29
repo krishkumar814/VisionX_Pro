@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="min-h-[75vh] flex flex-col justify-center items-center w-full">
+    <!-- Decorative background elements -->
+    <div class="fixed top-20 left-20 w-72 h-72 bg-purple-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
+    <div class="fixed top-40 right-20 w-72 h-72 bg-brand-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style="animation-delay: 2s;"></div>
+
+    <div class="card max-w-3xl w-full p-12 rounded-3xl text-center transform transition duration-500 hover:shadow-2xl relative z-10">
+        <h1 class="text-5xl sm:text-6xl font-extrabold mb-6 tracking-tight text-gray-900 dark:text-white">
+            Future of Learning is 
+            <span class="block mt-2 bg-clip-text text-transparent bg-gradient-to-r from-brand-500 to-purple-600 dark:from-brand-400 dark:to-purple-400">
+                VisionX Pro
+            </span>
+        </h1>
+        <p class="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-10 leading-relaxed max-w-2xl mx-auto">
+            Experience the next-generation AI-powered educational ecosystem. Sign in to access your gamified dashboard, personalized test instances, and deep KPI analytics.
+        </p>
+        
+        <div class="flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-6">
+            <a href="{{ url_for('auth.login') }}" class="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white bg-brand-600 rounded-full overflow-hidden shadow-xl hover:shadow-brand-500/50 transition-all duration-300 transform hover:-translate-y-1 w-full sm:w-auto">
+                <span class="absolute w-0 h-0 transition-all duration-500 ease-out bg-brand-500 rounded-full group-hover:w-56 group-hover:h-56 z-0"></span>
+                <span class="relative flex items-center z-10">
+                    Access Portal
+                    <svg class="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                </span>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

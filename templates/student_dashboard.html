@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Practice Quiz Notifications (floating) -->
+{% if unattempted_practice_quizzes %}
+<div class="fixed bottom-6 right-6 z-50 flex flex-col gap-3">
+    {% for quiz in unattempted_practice_quizzes[:2] %}
+    <div class="card w-72 animate-fadeIn" id="quiz_notification_{{ loop.index }}">
+        <div class="p-4">
+            <div class="flex items-start justify-between mb-2">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-yellow-100 dark:bg-yellow-900/40 flex items-center justify-center text-yellow-600 dark:text-yellow-400 text-sm">
+                        <i class="fa-solid fa-bell"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-gray-900 dark:text-white text-sm">{{ quiz.quiz_type }} Quiz</h4>
+                        <p class="text-[10px] text-gray-500">By {{ quiz.teacher.username }}</p>
+                    </div>
+                </div>
+                <button onclick="document.getElementById('quiz_notification_{{ loop.index }}').remove()" class="text-gray-400 hover:text-gray-600 text-xs"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-xs font-semibold text-gray-800 dark:text-gray-200">{{ quiz.subject.name }}</p>
+            <p class="text-[10px] text-gray-500 truncate mb-3">{{ quiz.topics }}</p>
+            <div class="flex gap-2">
+                <a href="{{ url_for('student.take_test', subject_id=quiz.subject_id, session_id=quiz.id) }}" class="btn-primary text-xs py-1.5 flex-1">Start MCQ</a>
+                {% if quiz.quiz_type == "Weak Topic" %}
+                <a href="{{ url_for('student.learn_new_dashboard') }}" class="btn-secondary text-xs py-1.5 flex-1"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i>Roadmap</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+<style>
+@keyframes fadeIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+.animate-fadeIn { animation: fadeIn 0.35s ease-out forwards; }
+</style>
+{% endif %}
+
+<div class="space-y-5">
+    <!-- Row 1: Stats Bar -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <!-- KPI -->
+        {% set kpi_color = 'blue' %}
+        {% if student_kpi >= 80 %}{% set kpi_color = 'emerald' %}{% elif student_kpi >= 50 %}{% set kpi_color = 'yellow' %}{% else %}{% set kpi_color = 'red' %}{% endif %}
+        <div class="stat-card">
+            <div class="stat-icon bg-{{ kpi_color }}-100 dark:bg-{{ kpi_color }}-900/30 text-{{ kpi_color }}-600 dark:text-{{ kpi_color }}-400">
+                <i class="fa-solid fa-gauge-high"></i>
+            </div>
+            <div>
+                <p class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">KPI Score</p>
+                <p class="text-2xl font-extrabold text-gray-900 dark:text-white">{{ student_kpi }}</p>
+            </div>
+        </div>
+        <!-- Credits -->
+        <div class="stat-card">
+            <div class="stat-icon bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400">
+                <i class="fa-solid fa-coins"></i>
+            </div>
+            <div>
+                <p class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Credits</p>
+                <p class="text-2xl font-extrabold text-gray-900 dark:text-white">{{ current_user.credits }}</p>
+            </div>
+        </div>
+        <!-- Attendance -->
+        {% set att_val = current_user.attendance_percentage %}
+        {% set att_color = 'emerald' %}
+        {% if att_val < 50 %}{% set att_color = 'red' %}{% elif att_val < 75 %}{% set att_color = 'yellow' %}{% endif %}
+        <div class="stat-card">
+            <div class="stat-icon bg-{{ att_color }}-100 dark:bg-{{ att_color }}-900/30 text-{{ att_color }}-600 dark:text-{{ att_color }}-400">
+                <i class="fa-solid fa-calendar-check"></i>
+            </div>
+            <div>
+                <p class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Attendance</p>
+                <p class="text-2xl font-extrabold text-gray-900 dark:text-white">{{ att_val }}%</p>
+            </div>
+        </div>
+        <!-- AI Forecast -->
+        {% set perf_color = 'blue' %}
+        {% if predicted_performance == 'Excellent' %}{% set perf_color = 'emerald' %}{% elif predicted_performance == 'Good' %}{% set perf_color = 'blue' %}{% elif predicted_performance == 'Average' %}{% set perf_color = 'yellow' %}{% else %}{% set perf_color = 'red' %}{% endif %}
+        <div class="stat-card">
+            <div class="stat-icon bg-{{ perf_color }}-100 dark:bg-{{ perf_color }}-900/30 text-{{ perf_color }}-600 dark:text-{{ perf_color }}-400">
+                <i class="fa-solid fa-robot"></i>
+            </div>
+            <div>
+                <p class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">AI Forecast</p>
+                <p class="text-lg font-extrabold text-{{ perf_color }}-600 dark:text-{{ perf_color }}-400">{{ predicted_performance }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Row 2: Mandatory Tests (only if present) -->
+    {% if unattempted_weekly_quizzes %}
+    <div class="card border-red-200 dark:border-red-900/40">
+        <div class="card-header bg-red-600 text-white">
+            <span><i class="fa-solid fa-triangle-exclamation mr-2 animate-pulse"></i>Mandatory Weekly Tests</span>
+            <span class="badge bg-white/20 text-white">{{ unattempted_weekly_quizzes|length }}</span>
+        </div>
+        <div class="card-body">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {% for quiz in unattempted_weekly_quizzes %}
+                <div class="flex items-center justify-between gap-3 p-3 rounded-xl border border-red-100 dark:border-red-900/30 bg-red-50/50 dark:bg-red-900/10">
+                    <div class="min-w-0">
+                        <p class="font-bold text-gray-900 dark:text-white text-sm truncate">{{ quiz.subject.name }}</p>
+                        <p class="text-[10px] text-gray-500 uppercase tracking-wider truncate">{{ quiz.topics }}</p>
+                    </div>
+                    <a href="{{ url_for('student.take_test', subject_id=quiz.subject_id, session_id=quiz.id) }}" class="btn-primary text-xs py-1.5 px-3 flex-shrink-0 whitespace-nowrap">Take Test</a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Row 2: Weak Topics (only if present) -->
+    {% if weak_topics %}
+    <div class="card border-amber-200 dark:border-amber-900/40">
+        <div class="card-header bg-amber-500 text-white">
+            <span><i class="fa-solid fa-chart-line mr-2"></i>Weak Topics</span>
+            <span class="badge bg-white/20 text-white">{{ weak_topics|length }}</span>
+        </div>
+        <div class="card-body">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {% for wt in weak_topics %}
+                <div class="p-3 rounded-xl border border-amber-100 dark:border-amber-900/30 bg-amber-50/30 dark:bg-amber-900/10 flex items-center justify-between gap-3">
+                    <div class="min-w-0">
+                        <p class="font-bold text-gray-900 dark:text-white text-sm">{{ wt.subject }}</p>
+                        <p class="text-[10px] text-gray-500 truncate">{{ wt.topic }} — <span class="text-red-500 font-bold">{{ wt.percentage }}%</span></p>
+                    </div>
+                    <form action="{{ url_for('student.learn_new_dashboard') }}" method="POST" class="flex-shrink-0">
+                        <input type="hidden" name="tech_name" value="Weak Topic: {{ wt.session_id }}">
+                        <button type="submit" class="btn-primary text-xs py-1.5 px-3" style="background:#f59e0b;box-shadow:0 1px 3px rgba(245,158,11,0.3);">
+                            <i class="fa-solid fa-wand-magic-sparkles mr-1"></i>Roadmap
+                        </button>
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Row 3: My Subjects (full width, max 3 per row) -->
+    <div class="card">
+        <div class="card-header bg-brand-600 text-white">
+            <span><i class="fa-solid fa-book-open mr-2"></i>My Subjects</span>
+            <span class="badge bg-white/20 text-white">{{ subjects|length }}</span>
+        </div>
+        <div class="card-body">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {% for sub in subjects %}
+                <a href="{{ url_for('student.view_subject', subject_id=sub.id) }}" class="flex items-center gap-3 p-3 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-darkbase hover:border-brand-300 dark:hover:border-brand-700 transition-colors group">
+                    <div class="w-9 h-9 rounded-lg bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center text-brand-600 dark:text-brand-400 flex-shrink-0">
+                        <i class="fa-solid fa-graduation-cap"></i>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <p class="font-bold text-gray-900 dark:text-white text-sm truncate">{{ sub.name }}</p>
+                        <p class="text-[10px] text-gray-500 dark:text-gray-400">Notes, AI Tutor & Tests</p>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-gray-300 dark:text-gray-600 group-hover:text-brand-500 transition-colors text-xs"></i>
+                </a>
+                {% else %}
+                <div class="sm:col-span-2 lg:col-span-3 text-center p-6 rounded-xl bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900">
+                    <i class="fa-solid fa-circle-info text-xl text-blue-400 mb-2"></i>
+                    <p class="text-sm text-blue-600 dark:text-blue-300">No subjects assigned yet.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Row 4: Quiz Trend + Action Plan (side by side, same fixed size) -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <!-- Quiz Trend -->
+        <div class="card flex flex-col h-[300px]">
+            <div class="card-header bg-gray-800 text-white flex-shrink-0">
+                <span><i class="fa-solid fa-chart-area mr-2 text-brand-400"></i>Quiz Trend</span>
+            </div>
+            <div class="card-body flex-1 flex items-center">
+                <div class="relative w-full h-full">
+                    <canvas id="marksChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Plan -->
+        <div class="card flex flex-col h-[300px]">
+            <div class="card-header bg-brand-600 text-white flex-shrink-0">
+                <span><i class="fa-solid fa-lightbulb mr-2 text-yellow-300"></i>Action Plan</span>
+            </div>
+            <div class="p-4 flex-1 overflow-y-auto">
+                {% if recommendations %}
+                <ul class="space-y-3">
+                    {% for rec in recommendations %}
+                    <li class="flex items-start gap-2 text-sm">
+                        <i class="fa-solid fa-chevron-right text-brand-500 mt-1 text-[9px] flex-shrink-0"></i>
+                        <div class="min-w-0">
+                            <p class="font-semibold text-gray-800 dark:text-gray-200 text-[13px]">{{ rec.text }}</p>
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 bg-gray-50 dark:bg-darkbase px-2 py-1 rounded border border-gray-100 dark:border-gray-800">{{ rec.reason }}</p>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <div class="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-600">
+                    <i class="fa-solid fa-clipboard-check text-3xl mb-2"></i>
+                    <p class="text-sm">No recommendations right now. Keep it up!</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    Chart.defaults.color = document.documentElement.classList.contains('dark') ? '#9ca3af' : '#6b7280';
+    Chart.defaults.font.family = "'Inter', sans-serif";
+    Chart.defaults.font.size = 11;
+
+    const marksCtx = document.getElementById('marksChart').getContext('2d');
+    new Chart(marksCtx, {
+        type: 'line',
+        data: {
+            labels: {% if marks_trend_labels %}{{ marks_trend_labels | safe }}{% else %}['No Data']{% endif %},
+            datasets: [{
+                label: 'Score',
+                data: {% if marks_trend_data %}{{ marks_trend_data | safe }}{% else %}[0]{% endif %},
+                borderColor: '#3b82f6',
+                fill: true,
+                backgroundColor: 'rgba(59, 130, 246, 0.08)',
+                tension: 0.4,
+                pointBackgroundColor: '#3b82f6',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, max: 100, grid: { color: document.documentElement.classList.contains('dark') ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+
+    const observer = new MutationObserver(() => {
+        const isDark = document.documentElement.classList.contains('dark');
+        Chart.defaults.color = isDark ? '#9ca3af' : '#6b7280';
+        const ci = Chart.instances[0];
+        if(ci) { ci.options.scales.y.grid.color = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'; ci.update(); }
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+</script>
+{% endblock %}

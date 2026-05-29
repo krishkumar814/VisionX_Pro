@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-6">
+    <!-- Breadcrumb -->
+    <nav class="flex px-5 py-3 text-gray-700 border border-gray-200 rounded-xl bg-white/50 backdrop-blur dark:bg-darkcard/50 dark:border-gray-700" aria-label="Breadcrumb">
+      <ol class="inline-flex items-center space-x-1 md:space-x-3">
+        <li class="inline-flex items-center">
+          <a href="{{ url_for('student.dashboard') }}" class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-brand-600 dark:text-gray-400 dark:hover:text-white transition">
+            <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>
+            Dashboard
+          </a>
+        </li>
+        <li aria-current="page">
+          <div class="flex items-center">
+            <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
+            <span class="ml-1 text-sm font-medium text-gray-500 md:ml-2 dark:text-gray-400">{{ subject.name }}</span>
+          </div>
+        </li>
+      </ol>
+    </nav>
+
+    </nav>
+
+    <!-- TABS NAVIGATION -->
+    <div class="mb-4 flex space-x-2 border-b border-gray-200 dark:border-gray-700">
+        <button onclick="switchTab('learning')" id="tab-btn-learning" class="px-4 py-2 font-semibold text-brand-600 border-b-2 border-brand-600 transition-colors">Learning Portal</button>
+        <button onclick="switchTab('marks')" id="tab-btn-marks" class="px-4 py-2 font-semibold text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border-b-2 border-transparent transition-colors">Marks & Results</button>
+    </div>
+
+    <!-- LEARNING PORTAL TAB -->
+    <div id="tab-learning" class="grid grid-cols-1 md:grid-cols-12 gap-8">
+        
+        <!-- Left Column: Materials & Test Btn -->
+        <div class="col-span-1 md:col-span-5 flex flex-col space-y-6">
+            
+            <div class="card rounded-2xl overflow-hidden shadow-sm flex flex-col flex-grow border border-gray-200 dark:border-gray-700">
+                <div class="bg-gray-800 dark:bg-gray-900 px-6 py-4 flex justify-between items-center">
+                    <h5 class="text-lg font-bold text-white flex items-center">
+                        <span class="mr-2">📚</span> Study Materials
+                    </h5>
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-white text-gray-900">{{ materials|length }} Files</span>
+                </div>
+                
+                <div class="flex-grow overflow-y-auto" style="max-height: 500px;">
+                    <ul class="divide-y divide-gray-200 dark:divide-gray-700">
+                        {% for mat in materials %}
+                        <li class="px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors flex justify-between items-center group">
+                            <div class="mr-4">
+                                <h6 class="text-sm font-bold text-gray-900 dark:text-white mb-1 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">{{ mat.title }}</h6>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Uploaded by Prof. {{ mat.teacher.username }}</p>
+                            </div>
+                            <a href="{{ url_for('static', filename=mat.file_path.replace('\\', '/').split('static/')[-1] if 'static/' in mat.file_path.replace('\\', '/') else mat.file_path.replace('\\', '/')) }}" target="_blank" class="flex-shrink-0 inline-flex items-center px-3 py-1.5 border border-brand-500 rounded-lg text-xs font-medium text-brand-600 dark:text-brand-400 bg-transparent hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-brand-900/30 transition-colors">
+                                View PDF
+                            </a>
+                        </li>
+                        {% else %}
+                        <div class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                            No materials uploaded for this subject yet.
+                        </div>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            
+            <!-- Removed Marks Breakdown from here -->
+        </div>
+
+        <!-- Right Column: AI Chat Agent -->
+        <div class="col-span-1 md:col-span-7 flex flex-col h-[700px]">
+            <div class="card rounded-2xl overflow-hidden shadow-md flex flex-col h-full border border-gray-200 dark:border-gray-700">
+                
+                <div class="bg-gradient-to-r from-brand-600 to-indigo-600 px-6 py-4 flex items-center border-b border-white/10 shadow-sm relative">
+                    <span class="absolute flex h-3 w-3 top-5 left-6">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500 border border-green-700"></span>
+                    </span>
+                    <h5 class="text-lg font-bold text-white ml-6">🤖 {{ subject.name }} AI Agent</h5>
+                </div>
+                
+                <!-- Chat Window -->
+                <div class="flex-grow flex flex-col bg-gray-50/50 dark:bg-darkbase/30 relative min-h-0">
+                    <div id="chat-window" class="flex-grow overflow-y-auto p-6 space-y-4 shadow-inner min-h-0" style="scrollbar-width: thin;">
+                        <!-- Initial AI Message -->
+                        <div class="flex flex-col items-start max-w-[85%]">
+                            <span class="text-xs font-bold text-gray-500 ml-2 mb-1">AI Tutor</span>
+                            <div class="bg-white dark:bg-darkcard text-gray-800 dark:text-gray-100 px-4 py-3 rounded-2xl rounded-tl-sm shadow-sm border border-gray-200 dark:border-gray-700">
+                                Hello! I am your AI assistant for <b class="text-brand-600 dark:text-brand-400">{{ subject.name }}</b>. You can ask me to explain concepts from your PDFs or clarify any doubts.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Input Area -->
+                    <div class="px-4 pt-3 bg-white dark:bg-darkcard border-t border-gray-200 dark:border-gray-700">
+                        <select id="pdf-select" class="w-full mb-3 text-sm p-2 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-brand-500">
+                            <option value="">General Subject Query (No specific PDF)</option>
+                            {% for mat in materials %}
+                            <option value="{{ mat.id }}">Query specific PDF: {{ mat.title }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="relative flex items-center mb-4">
+                            <input type="text" id="user-msg" class="w-full pl-5 pr-[100px] py-4 bg-gray-100 dark:bg-gray-800 border-none rounded-full text-sm focus:ring-2 focus:ring-brand-500 dark:text-white outline-none" placeholder="Ask a question..." onkeypress="if(event.key === 'Enter') sendMessage()">
+                            <button id="send-btn" onclick="sendMessage()" class="absolute right-2 top-2 bottom-2 px-6 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-full transition-colors flex items-center shadow-md">
+                                <span class="hidden sm:block mr-1">Ask</span>
+                                <svg class="w-4 h-4 transform rotate-90" fill="currentColor" viewBox="0 0 20 20"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div> <!-- END LEARNING PORTAL TAB -->
+
+    <!-- MARKS & RESULTS TAB -->
+    <div id="tab-marks" class="hidden space-y-6">
+        <div class="card rounded-2xl overflow-hidden shadow-sm flex flex-col border border-gray-200 dark:border-gray-700">
+            <div class="bg-gradient-to-r from-indigo-600 to-blue-600 px-6 py-4 flex justify-between items-center">
+                <h5 class="text-lg font-bold text-white flex items-center">
+                    <span class="mr-2">📈</span> Chronological Phase-wise Marks
+                </h5>
+            </div>
+            
+            <div class="p-0 overflow-x-auto bg-white dark:bg-darkcard min-h-[300px]">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-800">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Exam Phase</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Marks Obtained</th>
+                            <th class="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Performance</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                        {% for result in exam_results %}
+                        {% set percentage = (result.marks_obtained / result.max_marks * 100) if result.max_marks > 0 else 0 %}
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                            <td class="px-6 py-5 text-sm font-bold text-gray-900 dark:text-white">
+                                {{ result.exam_phase.name }}
+                            </td>
+                            <td class="px-6 py-5 text-sm">
+                                {% if result.is_locked %}
+                                    <span class="bg-gray-100 text-gray-800 font-bold px-2.5 py-1 rounded-full text-[10px] dark:bg-gray-700 dark:text-gray-300"><i class="fas fa-lock mr-1"></i> Locked</span>
+                                {% else %}
+                                    <span class="bg-yellow-100 text-yellow-800 font-bold px-2.5 py-1 rounded-full text-[10px] dark:bg-yellow-900/30 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-800"><i class="fas fa-edit mr-1"></i> Draft</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-5 text-sm text-right font-black text-gray-900 dark:text-white">
+                                {{ result.marks_obtained }} / {{ result.max_marks }}
+                            </td>
+                            <td class="px-6 py-5 text-right">
+                                <span class="text-sm font-black {% if percentage >= 80 %}text-green-500{% elif percentage >= 50 %}text-yellow-500{% else %}text-red-500{% endif %}">
+                                    {{ percentage | round(1) }}%
+                                </span>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="px-6 py-12 text-center text-gray-500 text-sm">
+                                <i class="fas fa-clipboard-list text-4xl mb-3 text-gray-300 dark:text-gray-600"></i>
+                                <p>No exam marks recorded for this subject yet.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div> <!-- END MARKS TAB -->
+</div>
+
+<script>
+async function sendMessage() {
+    const input = document.getElementById('user-msg');
+    const windowEl = document.getElementById('chat-window');
+    const btn = document.getElementById('send-btn');
+    const msg = input.value.trim();
+
+    if (!msg) return;
+
+    // 1. Add User Message
+    windowEl.innerHTML += `
+        <div class="flex flex-col items-end w-full">
+            <span class="text-xs font-bold text-gray-500 mr-2 mb-1 pl-10">You</span>
+            <div class="bg-brand-600 text-white px-4 py-3 rounded-2xl rounded-tr-sm shadow-sm max-w-[85%] break-words">
+                ${msg}
+            </div>
+        </div>
+    `;
+    
+    input.value = '';
+    btn.disabled = true;
+    windowEl.scrollTop = windowEl.scrollHeight;
+
+    // 2. Loading Indicator
+    const loaderId = 'loader-' + Date.now();
+    windowEl.innerHTML += `
+        <div class="flex flex-col items-start max-w-[85%]" id="${loaderId}">
+            <span class="text-xs font-bold text-gray-500 ml-2 mb-1">AI Tutor</span>
+            <div class="bg-white dark:bg-darkcard text-gray-500 italic px-4 py-3 rounded-2xl rounded-tl-sm shadow-sm border border-gray-200 dark:border-gray-700 flex items-center">
+                <svg class="animate-spin -ml-1 mr-3 h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                Processing...
+            </div>
+        </div>
+    `;
+    windowEl.scrollTop = windowEl.scrollHeight;
+
+    try {
+        const materialId = document.getElementById('pdf-select').value;
+        const response = await fetch('/student/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: msg, subject_id: "{{ subject.id }}", material_id: materialId })
+        });
+        const data = await response.json();
+        const loader = document.getElementById(loaderId);
+        loader.innerHTML = `
+            <span class="text-xs font-bold text-gray-500 ml-2 mb-1">AI Tutor</span>
+            <div class="bg-white dark:bg-darkcard text-gray-800 dark:text-gray-100 px-4 py-3 rounded-2xl rounded-tl-sm shadow-sm border border-gray-200 dark:border-gray-700 prose dark:prose-invert">
+                ${data.answer}
+            </div>
+        `;
+    } catch (error) {
+        console.error("Chat Error:", error);
+        const loader = document.getElementById(loaderId);
+        if(loader) {
+            loader.innerHTML = `
+                <span class="text-xs font-bold text-gray-500 ml-2 mb-1">AI Tutor</span>
+                <div class="bg-red-50 text-red-500 px-4 py-3 rounded-2xl rounded-tl-sm shadow-sm border border-red-200">
+                    Network Error: Connection failed. Please try again.
+                </div>
+            `;
+        }
+    } finally {
+        btn.disabled = false;
+        windowEl.scrollTop = windowEl.scrollHeight;
+    }
+}
+
+function switchTab(tabId) {
+    document.getElementById('tab-learning').classList.add('hidden');
+    document.getElementById('tab-marks').classList.add('hidden');
+    document.getElementById('tab-' + tabId).classList.remove('hidden');
+
+    const learningBtn = document.getElementById('tab-btn-learning');
+    const marksBtn = document.getElementById('tab-btn-marks');
+
+    const activeClass = "px-4 py-2 font-semibold text-brand-600 border-b-2 border-brand-600 transition-colors";
+    const inactiveClass = "px-4 py-2 font-semibold text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border-b-2 border-transparent transition-colors";
+
+    learningBtn.className = inactiveClass;
+    marksBtn.className = inactiveClass;
+
+    if(tabId === 'learning') {
+        learningBtn.className = activeClass;
+    } else if(tabId === 'marks') {
+        marksBtn.className = activeClass;
+    }
+}
+</script>
+{% endblock %}

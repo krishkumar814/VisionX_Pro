@@ -1,0 +1,551 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-5">
+    <div class="border-b border-gray-200 dark:border-gray-700 pb-4">
+        <h2 class="text-2xl font-extrabold text-gray-900 dark:text-white">HOD Portal</h2>
+        <p class="text-sm mt-0.5 text-gray-500 dark:text-gray-400">Oversee Weekly Quizzes and analyze Departmental Teacher KPIs.</p>
+    </div>
+
+    <!-- TABS -->
+    <div class="tab-bar">
+        <button onclick="switchTab('overview')" id="tab-btn-overview" class="tab-btn active">Overview</button>
+        <button onclick="switchTab('exams')" id="tab-btn-exams" class="tab-btn">Exam Management</button>
+        <button onclick="switchTab('corrections')" id="tab-btn-corrections" class="tab-btn">Corrections</button>
+    </div>
+
+    <!-- OVERVIEW TAB -->
+    <div id="tab-overview" class="space-y-6">
+        <!-- KPI Card -->
+        <div class="stat-card">
+            <div class="stat-icon bg-brand-100 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400"><i class="fa-solid fa-chart-line"></i></div>
+            <div>
+                <p class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Department KPI</p>
+                <p class="text-2xl font-extrabold text-gray-900 dark:text-white">{{ dept_kpi }} / 100</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left Column: Weekly Quizzes (8 cols) -->
+        <div class="lg:col-span-8 space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                <!-- Initiate Weekly Quiz -->
+                <div class="card rounded-2xl overflow-hidden shadow-md border border-brand-200 dark:border-brand-800">
+                    <div class="bg-gradient-to-r from-brand-600 to-indigo-600 px-6 py-4">
+                        <h3 class="text-lg font-bold text-white flex items-center">
+                            <i class="fas fa-rocket mr-2"></i> Initiate Weekly Quiz
+                        </h3>
+                    </div>
+                    <div class="p-6 bg-white dark:bg-darkcard h-full">
+                        <form action="{{ url_for('hod_director.generate_weekly_test') }}" method="POST" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1 uppercase tracking-wider">Select Class</label>
+                                <select name="class_id" id="quiz-class-select" class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-brand-500 dark:bg-darkbase dark:border-gray-600 dark:text-white outline-none" required onchange="loadSubjectsForClass(this.value)">
+                                    <option value="">-- Select a Class --</option>
+                                    {% for c in classes %}
+                                        <option value="{{ c.id }}">{{ c.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1 uppercase tracking-wider">Target Subject</label>
+                                <select name="subject_id" id="quiz-subject-select" class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-brand-500 dark:bg-darkbase dark:border-gray-600 dark:text-white outline-none" required disabled>
+                                    <option value="">-- Select a Class first --</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1 uppercase tracking-wider">Extensive Topic Map</label>
+                                <input type="text" name="topic" class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-brand-500 dark:bg-darkbase dark:border-gray-600 dark:text-white outline-none" placeholder="e.g. Full Unit 3 Coverage" required>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-1 uppercase tracking-wider">Difficulty Threshold</label>
+                                <select name="difficulty" class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-brand-500 dark:bg-darkbase dark:border-gray-600 dark:text-white outline-none">
+                                    <option value="Easy">Easy</option>
+                                    <option value="Medium" selected>Medium</option>
+                                    <option value="Hard">Hard</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="w-full py-3 mt-4 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-md transition-all outline-none flex justify-center items-center">
+                                Launch Quiz <i class="fas fa-arrow-right ml-2"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Active Quizzes -->
+                <div class="card rounded-2xl overflow-hidden shadow-md border border-red-200 dark:border-red-900/50">
+                    <div class="bg-gradient-to-r from-red-500 to-rose-600 px-6 py-4 flex items-center">
+                        <i class="fas fa-broadcast-tower text-white mr-2"></i>
+                        <h3 class="text-lg font-bold text-white">Active Broadcasts</h3>
+                    </div>
+                    <div class="p-0 bg-white dark:bg-darkcard h-full max-h-[400px] overflow-y-auto">
+                        {% if active_sessions %}
+                        <ul class="divide-y divide-gray-100 dark:divide-gray-700/50">
+                            {% for session in active_sessions %}
+                            <li class="px-6 py-4 flex justify-between items-center hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                                <div>
+                                    <strong class="text-gray-900 dark:text-white block">{{ session.subject.name }}</strong> 
+                                    <span class="text-xs text-gray-500 dark:text-gray-400 font-bold bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">{{ session.target_class.name }}</span>
+                                    <p class="text-xs text-brand-600 dark:text-brand-400 font-bold mt-1 max-w-[150px] truncate" title="{{ session.topics }}">{{ session.topics }}</p>
+                                </div>
+                                <a href="{{ url_for('hod_director.stop_weekly_test', session_id=session.id) }}" class="px-4 py-2 text-xs font-bold text-red-600 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg hover:bg-red-600 hover:text-white transition-colors flex items-center">
+                                    <i class="fas fa-stop-circle mr-1"></i> End
+                                </a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <div class="px-6 py-12 text-center text-gray-500 dark:text-gray-400 flex flex-col justify-center items-center h-full">
+                            <i class="fas fa-satellite-dish text-4xl mb-3 text-gray-300 dark:text-gray-600"></i>
+                            <p>No active broadcasts.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Right Column: Charts (4 cols) -->
+        <div class="lg:col-span-4 space-y-6">
+            <div class="card rounded-2xl overflow-hidden shadow-md border border-gray-200 dark:border-gray-700 h-full flex flex-col">
+                <div class="bg-gray-800 px-6 py-4 flex justify-between items-center">
+                    <h3 class="text-lg font-bold text-white"><i class="fas fa-chart-line mr-2 text-brand-400"></i> Teacher Performance</h3>
+                    <button id="chart-back-btn" class="hidden text-xs px-3 py-1.5 rounded bg-brand-600 hover:bg-brand-500 text-white font-bold transition shadow-sm" onclick="drillUp()">
+                        <i class="fas fa-arrow-left mr-1"></i> Back
+                    </button>
+                </div>
+                <div class="p-6 bg-white dark:bg-darkcard flex-grow relative min-h-[300px]">
+                    <div id="chart-loading" class="hidden absolute inset-0 bg-white/80 dark:bg-darkcard/80 backdrop-blur-sm z-10 flex items-center justify-center">
+                        <i class="fas fa-circle-notch fa-spin text-3xl text-brand-500"></i>
+                    </div>
+                    <canvas id="performanceChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Pending Complaints Section -->
+    <div class="card rounded-2xl overflow-hidden mt-8 border border-red-200 dark:border-red-900/50 shadow-md">
+        <div class="bg-gradient-to-r from-red-600 to-orange-600 px-6 py-4">
+            <h3 class="text-lg font-bold text-white flex items-center">
+                <i class="fas fa-exclamation-circle mr-2"></i> Pending Grievance Queue
+            </h3>
+        </div>
+        <div class="p-0 bg-white dark:bg-darkcard overflow-x-auto">
+            {% if complaints %}
+                <table class="w-full text-sm text-left text-gray-600 dark:text-gray-400">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-800 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">
+                        <tr>
+                            <th class="px-6 py-4 font-bold">Token & Date</th>
+                            <th class="px-6 py-4 font-bold w-1/3">Grievance Details</th>
+                            <th class="px-6 py-4 font-bold text-right">Resolution Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 dark:divide-gray-700/50">
+                    {% for c in complaints %}
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                            <td class="px-6 py-4 align-top">
+                                <span class="font-mono font-black text-gray-900 dark:text-white block mb-1">#{{ c.secret_token }}</span>
+                                <span class="bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400 text-xs font-bold px-2 py-0.5 rounded border border-red-100 dark:border-red-800">
+                                    {{ c.created_at.strftime('%b %d, %Y') }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 align-top text-gray-800 dark:text-gray-200 italic">
+                                "{{ c.text }}"
+                            </td>
+                            <td class="px-6 py-4 align-top">
+                                <form action="{{ url_for('hod_director.hod_resolve_complaint') }}" method="POST" class="flex flex-col gap-2">
+                                    <input type="hidden" name="complaint_id" value="{{ c.id }}">
+                                    <textarea name="hod_response" rows="2" class="w-full text-sm p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-darkbase text-gray-900 dark:text-white outline-none focus:ring-1 focus:ring-brand-500" placeholder="Official resolution explanation..." required></textarea>
+                                    <div class="flex justify-between items-center mt-1">
+                                        {% if not c.is_escalated_to_director %}
+                                        <a href="{{ url_for('hod_director.hod_escalate_complaint', comp_id=c.id) }}" class="text-xs font-bold text-red-600 hover:text-red-800 dark:text-red-400 hover:underline flex items-center">
+                                            <i class="fas fa-level-up-alt mr-1"></i> Escalate
+                                        </a>
+                                        {% endif %}
+                                        <button type="submit" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded-lg shadow-sm transition">
+                                            Mark Resolved
+                                        </button>
+                                    </div>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <div class="text-center text-gray-500 dark:text-gray-400 py-12 flex flex-col justify-center items-center">
+                    <i class="fas fa-clipboard-check text-5xl mb-4 text-green-500/50"></i>
+                    <p class="text-lg font-medium">Queue is empty.</p>
+                    <p class="text-sm">No pending grievances in your department.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    </div> <!-- END OVERVIEW TAB -->
+
+    <!-- EXAMS TAB -->
+    <div id="tab-exams" class="hidden space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Open Exam Phase -->
+            <div class="card rounded-2xl overflow-hidden shadow-sm border border-brand-200 dark:border-brand-900">
+                <div class="bg-gradient-to-r from-brand-600 to-indigo-600 px-6 py-4">
+                    <h3 class="text-lg font-bold text-white flex items-center">
+                        <i class="fas fa-calendar-plus mr-2"></i> Open New Exam Phase
+                    </h3>
+                </div>
+                <div class="p-6">
+                    <form action="{{ url_for('hod_director.open_exam_phase') }}" method="POST" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Phase Name</label>
+                            <input type="text" name="name" class="w-full px-4 py-2 border rounded-xl focus:ring-brand-500 dark:bg-darkbase dark:border-gray-600 dark:text-white outline-none" placeholder="e.g. Mid-Term 2026" required>
+                        </div>
+                        <button type="submit" class="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl transition shadow mt-2">Open Phase</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Manage Active Phases -->
+            <div class="card rounded-2xl overflow-hidden shadow-sm border border-indigo-200 dark:border-indigo-900">
+                <div class="bg-gradient-to-r from-indigo-500 to-blue-600 px-6 py-4">
+                    <h3 class="text-lg font-bold text-white flex items-center">
+                        <i class="fas fa-tasks mr-2"></i> Manage Exam Phases
+                    </h3>
+                </div>
+                <div class="p-6 max-h-[300px] overflow-y-auto">
+                    {% if exam_phases %}
+                    <ul class="divide-y divide-gray-100 dark:divide-gray-700">
+                        {% for p in exam_phases %}
+                        <li class="py-3 flex justify-between items-center">
+                            <div>
+                                <strong class="text-gray-900 dark:text-white">{{ p.name }}</strong>
+                                {% if p.is_active %}
+                                <span class="ml-2 px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded font-bold">Active</span>
+                                {% else %}
+                                <span class="ml-2 px-2 py-0.5 bg-gray-100 text-gray-800 text-xs rounded font-bold">Closed</span>
+                                {% endif %}
+                            </div>
+                            {% if p.is_active %}
+                            <a href="{{ url_for('hod_director.close_exam_phase', phase_id=p.id) }}" class="px-3 py-1 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded font-bold text-xs transition border border-red-200">Close & Lock</a>
+                            {% endif %}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-gray-500 text-sm text-center">No exam phases created.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CORRECTIONS TAB -->
+    <div id="tab-corrections" class="hidden space-y-6">
+        <div class="card rounded-2xl overflow-hidden shadow-sm border border-yellow-200 dark:border-yellow-900">
+            <div class="bg-gradient-to-r from-yellow-500 to-orange-500 px-6 py-4">
+                <h3 class="text-lg font-bold text-white flex items-center">
+                    <i class="fas fa-edit mr-2"></i> Pending Marks Corrections
+                </h3>
+            </div>
+            <div class="p-0 overflow-x-auto">
+                {% if correction_requests %}
+                <table class="w-full text-sm text-left text-gray-600 dark:text-gray-400">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-800 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">
+                        <tr>
+                            <th class="px-6 py-4 font-bold">Request Info</th>
+                            <th class="px-6 py-4 font-bold">Details</th>
+                            <th class="px-6 py-4 font-bold text-right">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 dark:divide-gray-700/50">
+                        {% for req in correction_requests %}
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                            <td class="px-6 py-4">
+                                <span class="block font-bold text-gray-900 dark:text-white">{{ req.teacher.username }}</span>
+                                <span class="text-xs">{{ req.created_at.strftime('%b %d, %Y') }}</span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <p class="text-gray-900 dark:text-white"><strong>Subject:</strong> {{ req.exam_result.subject.name }} | <strong>Student:</strong> {{ req.exam_result.student.username }}</p>
+                                <p class="text-brand-600 dark:text-brand-400 mt-1">Old Marks: {{ req.exam_result.marks_obtained }} &rarr; <strong>New Marks: {{ req.new_marks }}</strong></p>
+                                <p class="italic mt-1 text-xs text-gray-500">Reason: "{{ req.reason }}"</p>
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <form action="{{ url_for('hod_director.handle_correction', req_id=req.id, action='approve') }}" method="POST" class="inline-block mb-1">
+                                    <input type="text" name="hod_response" placeholder="Remarks..." class="text-xs px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-darkbase mr-2" required>
+                                    <button type="submit" class="px-3 py-1.5 bg-green-500 text-white font-bold rounded text-xs hover:bg-green-600 shadow">Approve</button>
+                                </form>
+                                <form action="{{ url_for('hod_director.handle_correction', req_id=req.id, action='reject') }}" method="POST" class="inline-block">
+                                    <input type="hidden" name="hod_response" value="Rejected.">
+                                    <button type="submit" class="px-3 py-1.5 bg-red-500 text-white font-bold rounded text-xs hover:bg-red-600 shadow ml-2">Reject</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="text-center py-8 text-gray-500">
+                    <i class="fas fa-check-circle text-4xl mb-2 text-green-400"></i>
+                    <p>No pending correction requests.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function switchTab(tabId) {
+        document.getElementById('tab-overview').classList.add('hidden');
+        document.getElementById('tab-exams').classList.add('hidden');
+        document.getElementById('tab-corrections').classList.add('hidden');
+        document.getElementById('tab-' + tabId).classList.remove('hidden');
+
+        const overviewBtn = document.getElementById('tab-btn-overview');
+        const examsBtn = document.getElementById('tab-btn-exams');
+        const corBtn = document.getElementById('tab-btn-corrections');
+
+        [overviewBtn, examsBtn, corBtn].forEach(b => b.classList.remove('active'));
+
+        if(tabId === 'overview') {
+            overviewBtn.classList.add('active');
+        } else if(tabId === 'exams') {
+            examsBtn.classList.add('active');
+        } else if(tabId === 'corrections') {
+            corBtn.classList.add('active');
+        }
+    }
+
+    // Dynamic class → subject loading for Weekly Quiz form
+    async function loadSubjectsForClass(classId) {
+        const subjectSelect = document.getElementById('quiz-subject-select');
+        subjectSelect.innerHTML = '<option value="">Loading...</option>';
+        subjectSelect.disabled = true;
+
+        if (!classId) {
+            subjectSelect.innerHTML = '<option value="">-- Select a Class first --</option>';
+            return;
+        }
+
+        try {
+            const res = await fetch(`/hod/api/subjects_by_class/${classId}`);
+            const data = await res.json();
+            subjectSelect.innerHTML = '';
+            if (data.subjects && data.subjects.length > 0) {
+                data.subjects.forEach(s => {
+                    subjectSelect.innerHTML += `<option value="${s.id}">${s.name}</option>`;
+                });
+                subjectSelect.disabled = false;
+            } else {
+                subjectSelect.innerHTML = '<option value="">No subjects found for this class</option>';
+            }
+        } catch (err) {
+            console.error('Failed to load subjects:', err);
+            subjectSelect.innerHTML = '<option value="">Error loading subjects</option>';
+        }
+    }
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    Chart.defaults.color = document.documentElement.classList.contains('dark') ? '#9ca3af' : '#4b5563';
+    Chart.defaults.font.family = "'Inter', sans-serif";
+    
+    // State for Drilldown
+    let chartPath = []; // Array of objects
+    let currentItems = []; // items returned from API
+    let currentLevel = 'base';
+    let currentTeacherId = null;
+    let currentClassId = null;
+    let currentSubjectId = null;
+
+    const ctx = document.getElementById('performanceChart').getContext('2d');
+    let performanceChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: [],
+            datasets: [
+                {
+                    label: 'KPI Score',
+                    data: [],
+                    backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                    borderRadius: 4,
+                },
+                {
+                    label: 'Attendance (%)',
+                    data: [],
+                    backgroundColor: 'rgba(16, 185, 129, 0.5)',
+                    borderRadius: 4,
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            onClick: (e, activeEls) => {
+                if (activeEls.length > 0) {
+                    const dataIndex = activeEls[0].index;
+                    const clickedItem = currentItems[dataIndex];
+                    if(clickedItem && currentLevel !== 'subject') {
+                        drillDown(clickedItem);
+                    }
+                }
+            },
+            onHover: (event, chartElement) => {
+                event.native.target.style.cursor = chartElement[0] && currentLevel !== 'subject' ? 'pointer' : 'default';
+            },
+            plugins: { 
+                legend: { position: 'top' },
+                tooltip: {
+                    enabled: true,
+                    mode: 'index',
+                    intersect: false,
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) { label += ': '; }
+                            if (context.parsed.y !== null) {
+                                label += context.parsed.y + (context.datasetIndex === 1 ? '%' : '');
+                            }
+                            return label;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: { 
+                    beginAtZero: true, 
+                    max: 100,
+                    title: {
+                        display: true,
+                        text: 'Performance Metric (Score/%)',
+                        font: { weight: 'bold' }
+                    },
+                    grid: { color: document.documentElement.classList.contains('dark') ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)' }
+                },
+                x: { 
+                    title: {
+                        display: true,
+                        text: 'Teachers',
+                        font: { weight: 'bold' }
+                    },
+                    grid: { display: false } 
+                }
+            }
+        }
+    });
+
+    function loadChartData() {
+        const loader = document.getElementById('chart-loading');
+        loader.classList.remove('hidden');
+        
+        let url = `/api/analytics/drilldown?view_role=hod`;
+        if (currentTeacherId) url += `&teacher_id=${currentTeacherId}`;
+        if (currentClassId) url += `&class_id=${currentClassId}`;
+        if (currentSubjectId) url += `&subject_id=${currentSubjectId}`;
+        
+        fetch(url)
+            .then(res => res.json())
+            .then(data => {
+                currentItems = data.items;
+                performanceChart.data.labels = data.labels;
+                performanceChart.data.datasets[0].data = data.data;
+                performanceChart.data.datasets[1].data = data.attendance_data || [];
+                
+                // Dynamic Axis Titles
+                let xAxisTitle = 'Teachers';
+                if (currentLevel === 'base') {
+                    performanceChart.data.datasets[0].label = 'Teacher KPI';
+                    performanceChart.data.datasets[0].backgroundColor = 'rgba(59, 130, 246, 0.7)';
+                    performanceChart.data.datasets[1].label = 'Teacher Attendance (%)';
+                    performanceChart.data.datasets[1].backgroundColor = 'rgba(16, 185, 129, 0.5)';
+                    xAxisTitle = 'Teachers';
+                } else if (currentLevel === 'teacher') {
+                    performanceChart.data.datasets[0].label = 'Class KPI';
+                    performanceChart.data.datasets[0].backgroundColor = 'rgba(139, 92, 246, 0.7)';
+                    performanceChart.data.datasets[1].label = 'Class Attendance (%)';
+                    performanceChart.data.datasets[1].backgroundColor = 'rgba(16, 185, 129, 0.5)';
+                    xAxisTitle = 'Classes';
+                } else if (currentLevel === 'class') {
+                    performanceChart.data.datasets[0].label = 'Subject KPI';
+                    performanceChart.data.datasets[0].backgroundColor = 'rgba(16, 185, 129, 0.7)';
+                    performanceChart.data.datasets[1].label = 'Subject Attendance (%)';
+                    performanceChart.data.datasets[1].backgroundColor = 'rgba(34, 197, 94, 0.4)';
+                    xAxisTitle = 'Subjects';
+                } else if (currentLevel === 'subject') {
+                    performanceChart.data.datasets[0].label = 'Student KPI';
+                    performanceChart.data.datasets[0].backgroundColor = 'rgba(236, 72, 153, 0.7)';
+                    performanceChart.data.datasets[1].label = 'Student Attendance (%)';
+                    performanceChart.data.datasets[1].backgroundColor = 'rgba(16, 185, 129, 0.5)';
+                    xAxisTitle = 'Students';
+                }
+                
+                performanceChart.options.scales.x.title.text = xAxisTitle;
+                performanceChart.update();
+                updateBackButton();
+            })
+            .catch(err => console.error(err))
+            .finally(() => {
+                loader.classList.add('hidden');
+            });
+    }
+
+    function drillDown(item) {
+        chartPath.push({ level: currentLevel, teacherId: currentTeacherId, classId: currentClassId, subjectId: currentSubjectId });
+        
+        if (currentLevel === 'base') {
+            currentLevel = 'teacher';
+            currentTeacherId = item.id;
+        } else if (currentLevel === 'teacher') {
+            currentLevel = 'class';
+            currentClassId = item.id;
+        } else if (currentLevel === 'class') {
+            currentLevel = 'subject';
+            currentSubjectId = item.id;
+        }
+        
+        loadChartData();
+    }
+
+    function drillUp() {
+        if (chartPath.length === 0) return;
+        
+        const prevState = chartPath.pop();
+        currentLevel = prevState.level;
+        currentTeacherId = prevState.teacherId;
+        currentClassId = prevState.classId;
+        currentSubjectId = prevState.subjectId;
+        
+        loadChartData();
+    }
+
+    function updateBackButton() {
+        const backBtn = document.getElementById('chart-back-btn');
+        if (chartPath.length > 0) {
+            backBtn.classList.remove('hidden');
+        } else {
+            backBtn.classList.add('hidden');
+        }
+    }
+
+    // Initialize Chart on load
+    document.addEventListener("DOMContentLoaded", () => {
+        loadChartData();
+    });
+
+    const observer = new MutationObserver(() => {
+        const isDark = document.documentElement.classList.contains('dark');
+        Chart.defaults.color = isDark ? '#9ca3af' : '#4b5563';
+        const chartInstance = Chart.instances[0];
+        if(chartInstance) {
+            chartInstance.options.scales.y.grid.color = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+            chartInstance.update();
+        }
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+</script>
+{% endblock %}

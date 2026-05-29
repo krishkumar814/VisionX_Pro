@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="mb-6 flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-4">
+        <div>
+            <a href="{{ url_for('hod_director.director_dashboard') }}" class="text-brand-600 hover:underline text-sm font-bold mb-2 inline-block"><i class="fas fa-arrow-left mr-1"></i> Back to Global View</a>
+            <h2 class="text-3xl font-extrabold text-gray-900 dark:text-white">Department Drill-down: {{ department.name }}</h2>
+            <p class="text-sm mt-1 text-gray-500 dark:text-gray-400">Analyze teacher performance within this department.</p>
+        </div>
+        <div class="text-right">
+            <span class="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full font-bold text-xs dark:bg-indigo-900/50 dark:text-indigo-400">HOD: {{ department.hod.username if department.hod else 'Unassigned' }}</span>
+        </div>
+    </div>
+
+    <!-- KPI Card -->
+    <div class="card rounded-2xl p-6 border border-brand-200 bg-white dark:bg-darkcard dark:border-brand-900 shadow-sm flex items-center mb-6">
+        <div class="p-4 bg-brand-100 dark:bg-brand-900/50 rounded-xl text-brand-600 dark:text-brand-400 mr-4">
+            <i class="fas fa-chart-line text-2xl"></i>
+        </div>
+        <div>
+            <p class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Department Overall KPI</p>
+            <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ dept_kpi }} / 100</p>
+        </div>
+    </div>
+
+    <!-- Teacher List -->
+    <div class="card rounded-2xl overflow-hidden shadow-md border border-gray-200 dark:border-gray-700 h-full flex flex-col">
+        <div class="bg-gray-800 px-6 py-4">
+            <h3 class="text-lg font-bold text-white"><i class="fas fa-chalkboard-teacher mr-2 text-brand-400"></i> Teacher Performance</h3>
+        </div>
+        <div class="p-0 bg-white dark:bg-darkcard flex-grow overflow-y-auto max-h-[600px]">
+            {% if teacher_performances %}
+            <ul class="divide-y divide-gray-100 dark:divide-gray-700">
+                {% for tp in teacher_performances %}
+                <li>
+                    <div class="px-6 py-4 flex justify-between items-center bg-white dark:bg-darkcard border-b border-gray-100 dark:border-gray-800">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 rounded-full bg-brand-100 dark:bg-brand-900/50 text-brand-600 dark:text-brand-400 flex items-center justify-center font-bold mr-4 text-lg">
+                                {{ tp.teacher.username[0] | upper }}
+                            </div>
+                            <div>
+                                <strong class="text-gray-900 dark:text-white block text-lg">{{ tp.teacher.username }}</strong>
+                                <span class="text-sm text-gray-500">{{ tp.teacher.email }}</span>
+                            </div>
+                        </div>
+                        <div class="text-right flex items-center">
+                            <span class="text-2xl font-black mr-4 {% if tp.kpi >= 80 %}text-green-500{% elif tp.kpi >= 50 %}text-yellow-500{% else %}text-red-500{% endif %}">
+                                {{ tp.kpi }}
+                            </span>
+                        </div>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <div class="p-6 text-center text-gray-500 dark:text-gray-400 py-12">
+                <i class="fas fa-users-slash text-4xl mb-3 text-gray-300 dark:text-gray-600"></i>
+                <p>No teachers assigned to this department.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

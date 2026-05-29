@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VisionX Pro</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            400: '#60a5fa',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            900: '#1e3a8a',
+                        },
+                        darkbase: '#0f172a',
+                        darkcard: '#1e293b'
+                    }
+                }
+            }
+        }
+        
+        // Initial Theme Load
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark')
+        } else {
+            document.documentElement.classList.remove('dark')
+        }
+    </script>
+    <style>
+        /* ===== Design System ===== */
+        .glass {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+        }
+        .dark .glass {
+            background: rgba(15, 23, 42, 0.85);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 1rem;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03);
+            overflow: hidden;
+            transition: box-shadow 0.2s ease;
+        }
+        .card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.07); }
+        .dark .card {
+            background: #1e293b;
+            border-color: rgba(255,255,255,0.06);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+        .dark .card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
+
+        .card-header {
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-weight: 700;
+            font-size: 0.95rem;
+            letter-spacing: 0.01em;
+        }
+        .card-body { padding: 1.5rem; }
+
+        /* Stat cards */
+        .stat-card {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.25rem 1.5rem;
+            border-radius: 1rem;
+            border: 1px solid #e5e7eb;
+            background: #fff;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.06); }
+        .dark .stat-card { background: #1e293b; border-color: rgba(255,255,255,0.06); }
+        .dark .stat-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.4); }
+
+        .stat-icon {
+            width: 3rem; height: 3rem;
+            border-radius: 0.75rem;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.25rem;
+            flex-shrink: 0;
+        }
+
+        /* Tabs */
+        .tab-bar { display: flex; gap: 0.25rem; border-bottom: 1px solid #e5e7eb; margin-bottom: 1.5rem; }
+        .dark .tab-bar { border-color: rgba(255,255,255,0.08); }
+        .tab-btn {
+            padding: 0.6rem 1.25rem;
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: #6b7280;
+            border-bottom: 2px solid transparent;
+            transition: all 0.15s ease;
+            cursor: pointer;
+            background: none; border-top: none; border-left: none; border-right: none;
+        }
+        .tab-btn:hover { color: #374151; }
+        .dark .tab-btn { color: #9ca3af; }
+        .dark .tab-btn:hover { color: #e5e7eb; }
+        .tab-btn.active {
+            color: #2563eb;
+            border-bottom-color: #2563eb;
+        }
+        .dark .tab-btn.active { color: #60a5fa; border-bottom-color: #60a5fa; }
+
+        /* Badge */
+        .badge {
+            display: inline-flex; align-items: center;
+            padding: 0.2rem 0.6rem;
+            font-size: 0.65rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.05em;
+            border-radius: 0.375rem;
+        }
+
+        /* Table clean */
+        .clean-table { width: 100%; text-align: left; font-size: 0.875rem; }
+        .clean-table thead { background: #f9fafb; border-bottom: 1px solid #e5e7eb; }
+        .dark .clean-table thead { background: rgba(30,41,59,0.8); border-color: rgba(255,255,255,0.06); }
+        .clean-table th {
+            padding: 0.75rem 1.25rem;
+            font-size: 0.7rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.06em;
+            color: #6b7280;
+        }
+        .dark .clean-table th { color: #9ca3af; }
+        .clean-table td { padding: 0.75rem 1.25rem; }
+        .clean-table tbody tr { border-bottom: 1px solid #f3f4f6; transition: background 0.1s; }
+        .dark .clean-table tbody tr { border-color: rgba(255,255,255,0.04); }
+        .clean-table tbody tr:hover { background: #f9fafb; }
+        .dark .clean-table tbody tr:hover { background: rgba(255,255,255,0.03); }
+
+        /* Form inputs */
+        .input {
+            width: 100%;
+            padding: 0.6rem 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.75rem;
+            font-size: 0.875rem;
+            outline: none;
+            transition: border-color 0.15s, box-shadow 0.15s;
+            background: #fff;
+        }
+        .input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+        .dark .input { background: #0f172a; border-color: #374151; color: #f1f5f9; }
+        .dark .input:focus { border-color: #60a5fa; box-shadow: 0 0 0 3px rgba(96,165,250,0.15); }
+
+        .btn-primary {
+            display: inline-flex; align-items: center; justify-content: center;
+            padding: 0.65rem 1.5rem;
+            background: #2563eb; color: #fff;
+            font-weight: 700; font-size: 0.875rem;
+            border-radius: 0.75rem; border: none;
+            cursor: pointer; transition: all 0.15s;
+            box-shadow: 0 1px 3px rgba(37,99,235,0.3);
+        }
+        .btn-primary:hover { background: #1d4ed8; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(37,99,235,0.3); }
+
+        .btn-secondary {
+            display: inline-flex; align-items: center; justify-content: center;
+            padding: 0.65rem 1.5rem;
+            background: #1f2937; color: #fff;
+            font-weight: 700; font-size: 0.875rem;
+            border-radius: 0.75rem; border: none;
+            cursor: pointer; transition: all 0.15s;
+        }
+        .btn-secondary:hover { background: #111827; }
+        .dark .btn-secondary { background: #374151; }
+        .dark .btn-secondary:hover { background: #4b5563; }
+
+        .btn-danger {
+            display: inline-flex; align-items: center; justify-content: center;
+            padding: 0.45rem 1rem;
+            background: #fef2f2; color: #dc2626;
+            font-weight: 700; font-size: 0.75rem;
+            border-radius: 0.5rem; border: 1px solid #fecaca;
+            cursor: pointer; transition: all 0.15s;
+        }
+        .btn-danger:hover { background: #dc2626; color: #fff; border-color: #dc2626; }
+        .dark .btn-danger { background: rgba(220,38,38,0.1); border-color: rgba(220,38,38,0.3); }
+        .dark .btn-danger:hover { background: #dc2626; color: #fff; }
+
+        .btn-success {
+            display: inline-flex; align-items: center; justify-content: center;
+            padding: 0.45rem 1rem;
+            background: #f0fdf4; color: #16a34a;
+            font-weight: 700; font-size: 0.75rem;
+            border-radius: 0.5rem; border: 1px solid #bbf7d0;
+            cursor: pointer; transition: all 0.15s;
+        }
+        .btn-success:hover { background: #16a34a; color: #fff; border-color: #16a34a; }
+
+        /* Section heading */
+        .section-title {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #6b7280;
+            margin-bottom: 0.75rem;
+        }
+        .dark .section-title { color: #9ca3af; }
+
+        /* Flash messages */
+        .flash-msg {
+            padding: 0.85rem 1.25rem;
+            border-radius: 0.75rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            display: flex; align-items: center; justify-content: space-between;
+            animation: slideDown 0.3s ease-out;
+        }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+
+        /* Page transition */
+        main { animation: fadeIn 0.25s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-darkbase text-gray-900 dark:text-gray-100 min-h-screen flex flex-col font-sans">
+    <nav class="glass sticky top-0 z-50 transition-colors duration-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-14">
+                <!-- Brand -->
+                <a href="{% if current_user.is_authenticated %}{% if current_user.role == 'Technical Head' %}{{ url_for('auth.admin_dashboard') }}{% elif current_user.role == 'Teacher' %}{{ url_for('teacher.dashboard') }}{% elif current_user.role == 'Student' %}{{ url_for('student.dashboard') }}{% elif current_user.role == 'HOD' %}{{ url_for('hod_director.dashboard') }}{% elif current_user.role == 'Director' %}{{ url_for('hod_director.director_dashboard') }}{% else %}/{% endif %}{% else %}/{% endif %}" class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-brand-500 to-purple-600 hover:scale-105 transition-transform duration-300">
+                    VisionX Pro
+                </a>
+                <!-- Right Nav -->
+                <div class="flex items-center gap-2 sm:gap-3">
+                    {% if current_user.is_authenticated %}
+                        {% if current_user.role == 'Student' %}
+                        <a href="{{ url_for('student.complaints_portal') }}" class="flex items-center text-red-600 dark:text-red-400 font-bold hover:scale-105 transition-transform">
+                            🚨 <span class="hidden sm:inline ml-1">Hotline</span>
+                        </a>
+                        <a href="{{ url_for('student.learn_new_dashboard') }}" class="flex items-center text-blue-600 dark:text-blue-400 font-bold hover:scale-105 transition-transform">
+                            🧠 <span class="hidden sm:inline ml-1">Learn New</span>
+                        </a>
+                        <a href="{{ url_for('student.leaderboard') }}" class="flex items-center text-yellow-600 dark:text-yellow-400 font-bold hover:scale-105 transition-transform">
+                            🏆 <span class="hidden sm:inline ml-1">Leaderboard</span>
+                        </a>
+                        {% endif %}
+                        <span class="text-sm font-medium hidden sm:inline">Hi, {{ current_user.username }}</span>
+                        <a href="{{ url_for('auth.logout') }}" class="px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition duration-200">Logout</a>
+                    {% else %}
+                        <a href="{{ url_for('auth.login') }}" class="btn-primary text-xs px-4 py-2">Login</a>
+                    {% endif %}
+                    
+                    <!-- Dark Mode Toggle -->
+                    <button id="themeToggle" class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors text-gray-500 dark:text-gray-400">
+                        <i class="fa-solid fa-sun text-sm hidden dark:block text-yellow-400"></i>
+                        <i class="fa-solid fa-moon text-sm block dark:hidden"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="mb-6 space-y-2">
+            {% for category, message in messages %}
+              {% if category == 'success' %}
+                <div class="flash-msg bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-800">
+                    <span><i class="fa-solid fa-circle-check mr-2"></i>{{ message }}</span>
+                </div>
+              {% elif category == 'danger' %}
+                <div class="flash-msg bg-red-50 text-red-700 border border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800">
+                    <span><i class="fa-solid fa-circle-xmark mr-2"></i>{{ message }}</span>
+                </div>
+              {% elif category == 'warning' %}
+                <div class="flash-msg bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-800">
+                    <span><i class="fa-solid fa-triangle-exclamation mr-2"></i>{{ message }}</span>
+                </div>
+              {% else %}
+                <div class="flash-msg bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800">
+                    <span><i class="fa-solid fa-circle-info mr-2"></i>{{ message }}</span>
+                </div>
+              {% endif %}
+            {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="border-t border-gray-200 dark:border-gray-800 py-4 mt-auto">
+        <p class="text-center text-xs text-gray-400 dark:text-gray-600">VisionX Pro — AI-Powered Educational Ecosystem</p>
+    </footer>
+
+    <script>
+        const themeToggleBtn = document.getElementById('themeToggle');
+        themeToggleBtn.addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+            if (document.documentElement.classList.contains('dark')) {
+                localStorage.theme = 'dark';
+            } else {
+                localStorage.theme = 'light';
+            }
+        });
+
+        // Auto-dismiss flash messages after 5 seconds
+        setTimeout(() => {
+            document.querySelectorAll('.flash-msg').forEach(el => {
+                el.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(-8px)';
+                setTimeout(() => el.remove(), 300);
+            });
+        }, 5000);
+    </script>
+</body>
+</html>

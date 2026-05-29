@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="mb-6 flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-4">
+        <div>
+            <a href="{{ url_for('hod_director.dashboard') }}" class="text-brand-600 hover:underline text-sm font-bold mb-2 inline-block"><i class="fas fa-arrow-left mr-1"></i> Back to Dashboard</a>
+            <h2 class="text-3xl font-extrabold text-gray-900 dark:text-white">Teacher Drill-down: {{ teacher.username }}</h2>
+            <p class="text-sm mt-1 text-gray-500 dark:text-gray-400">Analyze subject and student-level performance for this teacher.</p>
+        </div>
+        <div class="text-right">
+            <span class="px-3 py-1 bg-brand-100 text-brand-800 rounded-full font-bold text-xs dark:bg-brand-900/50 dark:text-brand-400">Department: {{ teacher.department.name if teacher.department else 'N/A' }}</span>
+        </div>
+    </div>
+
+    <div class="card rounded-2xl overflow-hidden shadow-md border border-gray-200 dark:border-gray-700">
+        <div class="bg-gray-800 px-6 py-4 flex flex-col sm:flex-row items-center justify-between">
+            <h3 class="text-lg font-bold text-white mb-3 sm:mb-0"><i class="fas fa-search-plus mr-2 text-brand-400"></i> Student Performance Drill-down</h3>
+            <div class="flex space-x-2">
+                <select id="drill-class" class="text-xs px-3 py-2 rounded bg-gray-700 text-white border-none focus:ring-1 focus:ring-brand-500 outline-none" onchange="updateHodDrilldown()">
+                    <option value="">Select Class</option>
+                    {% set unique_classes = [] %}
+                    {% for a in assignments %}
+                        {% if a.class_id not in unique_classes %}
+                            <option value="{{ a.class_id }}">{{ a.target_class.name }}</option>
+                            {% set _ = unique_classes.append(a.class_id) %}
+                        {% endif %}
+                    {% endfor %}
+                </select>
+                <select id="drill-subject" class="text-xs px-3 py-2 rounded bg-gray-700 text-white border-none focus:ring-1 focus:ring-brand-500 outline-none" onchange="updateHodDrilldown()">
+                    <option value="">Select Subject</option>
+                    {% set unique_subjects = [] %}
+                    {% for a in assignments %}
+                        {% if a.subject_id not in unique_subjects %}
+                            <option value="{{ a.subject_id }}">{{ a.subject.name }}</option>
+                            {% set _ = unique_subjects.append(a.subject_id) %}
+                        {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        
+        <div class="p-6 bg-white dark:bg-darkcard h-[400px] flex items-center justify-center relative">
+            <div id="chart-loading" class="hidden absolute inset-0 bg-white/80 dark:bg-darkcard/80 backdrop-blur-sm z-10 flex items-center justify-center">
+                <i class="fas fa-circle-notch fa-spin text-4xl text-brand-500"></i>
+            </div>
+            <div class="relative w-full h-full" id="chart-container">
+                <div id="placeholder-msg" class="absolute inset-0 flex flex-col items-center justify-center text-gray-400">
+                    <i class="fas fa-hand-pointer text-4xl mb-3"></i>
+                    <p class="font-medium">Select a Class and Subject to view student KPI data.</p>
+                </div>
+                <canvas id="drilldownChart" class="hidden"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    Chart.defaults.color = document.documentElement.classList.contains('dark') ? '#9ca3af' : '#4b5563';
+    Chart.defaults.font.family = "'Inter', sans-serif";
+    
+    let drilldownChart = null;
+
+    function updateHodDrilldown() {
+        const classId = document.getElementById('drill-class').value;
+        const subjectId = document.getElementById('drill-subject').value;
+        const teacherId = "{{ teacher.id }}";
+        
+        if (!classId || !subjectId) return; 
+        
+        document.getElementById('placeholder-msg').classList.add('hidden');
+        document.getElementById('drilldownChart').classList.remove('hidden');
+        
+        const loader = document.getElementById('chart-loading');
+        loader.classList.remove('hidden');
+        
+        fetch(`/hod/chart_data?class_id=${classId}&subject_id=${subjectId}&teacher_id=${teacherId}`)
+            .then(res => res.json())
+            .then(data => {
+                if(drilldownChart) {
+                    drilldownChart.destroy();
+                }
+                
+                const ctx = document.getElementById('drilldownChart').getContext('2d');
+                drilldownChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            label: 'Student Subject KPI',
+                            data: data.data,
+                            backgroundColor: 'rgba(139, 92, 246, 0.7)',
+                            borderColor: 'rgba(139, 92, 246, 1)',
+                            borderWidth: 1,
+                            borderRadius: 4,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: { 
+                                beginAtZero: true, 
+                                max: 100,
+                                grid: { color: document.documentElement.classList.contains('dark') ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)' }
+                            },
+                            x: { grid: { display: false } }
+                        }
+                    }
+                });
+            })
+            .catch(err => console.error(err))
+            .finally(() => {
+                loader.classList.add('hidden');
+            });
+    }
+</script>
+{% endblock %}
