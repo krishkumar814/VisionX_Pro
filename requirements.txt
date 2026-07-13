@@ -9,3 +9,4 @@ pandas
 numpy
 scikit-learn
 gunicorn
+google-genai
